@@ -39,11 +39,21 @@ class SupabaseVectorStore:
         self.collection_name = collection_name
         self.embedding_model_name = embedding_model_name
         
-        # Initialize embedding model
-        logger.info(f"Loading embedding model: {embedding_model_name}")
-        self.embedding_model = SentenceTransformer(embedding_model_name)
-        self.embedding_dim = self.embedding_model.get_sentence_embedding_dimension()
-        logger.info(f"Embedding model loaded successfully (dimension: {self.embedding_dim})")
+        # Initialize embedding model (only if available, skip on Vercel)
+        self.embedding_model = None
+        self.embedding_dim = 384  # Default for all-MiniLM-L6-v2
+        
+        if SENTENCE_TRANSFORMERS_AVAILABLE and not os.getenv("VERCEL"):
+            # Only load model if not on Vercel
+            logger.info(f"Loading embedding model: {embedding_model_name}")
+            self.embedding_model = SentenceTransformer(embedding_model_name)
+            self.embedding_dim = self.embedding_model.get_sentence_embedding_dimension()
+            logger.info(f"Embedding model loaded successfully (dimension: {self.embedding_dim})")
+        else:
+            # On Vercel or if sentence-transformers not available, use API
+            logger.info("Using embedding API (sentence-transformers not available or on Vercel)")
+            # Use default dimension for all-MiniLM-L6-v2
+            self.embedding_dim = 384
         
         # Create connection pool with timeout
         try:
