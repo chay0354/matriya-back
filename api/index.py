@@ -1,24 +1,27 @@
 """
 Vercel serverless function wrapper for FastAPI
+Vercel Python runtime - ASGI app export
 """
 import sys
 import os
 from pathlib import Path
 
-# Set Vercel environment variable early - MUST be first
+# Set Vercel flag FIRST before any other imports
 os.environ["VERCEL"] = "1"
 
-# Add parent directory to path
+# Setup paths
 back_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(back_dir))
 os.chdir(str(back_dir))
 
-# Import app - delay any side effects
-def get_app():
-    """Lazy import to avoid Vercel handler detection issues"""
-    from main import app
-    return app
+# Import FastAPI app
+# This must be at module level for Vercel to detect it as ASGI
+from main import app
 
-# Export handler - explicitly as ASGI app
-app = get_app()
+# Export as handler - Vercel expects this name
 handler = app
+
+# Explicitly mark as ASGI (not WSGI or HTTP handler)
+# This helps Vercel's handler detection
+if not hasattr(handler, '__call__'):
+    raise TypeError("Handler must be callable (ASGI app)")
