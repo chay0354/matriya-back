@@ -56,7 +56,7 @@ allowed_origins.extend([
     "file://",  # Allow file:// protocol for direct HTML opening
 ])
 
-# Add Vercel frontend URL (production)
+# Add Vercel frontend URL (production) - always allow
 allowed_origins.append("https://matriya-front.vercel.app")
 
 # Add Vercel deployment URL if available (backend's own URL - for reference)
@@ -68,13 +68,31 @@ if vercel_url:
 if os.getenv("ENVIRONMENT") != "production":
     allowed_origins.append("*")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Log allowed origins for debugging
+logger.info(f"CORS allowed origins: {allowed_origins}")
+
+# Configure CORS middleware
+# Note: In production, we need to explicitly list origins (can't use "*" with credentials)
+if "*" in allowed_origins:
+    # Development mode - allow all
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,  # Can't use credentials with wildcard
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+else:
+    # Production mode - explicit origins
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
 
 # Initialize RAG service (lazy initialization to avoid blocking startup)
 rag_service = None
