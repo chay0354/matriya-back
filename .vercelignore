@@ -1,12 +1,15 @@
-# Ignore ALL local development files and data
+# CRITICAL: Exclude all data directories and large files
+# These should NEVER be deployed to Vercel
+
+# Database directories and files
 chroma_db/
 uploads/
-users.db
 *.db
 *.sqlite
 *.sqlite3
+users.db
 
-# Python cache and compiled files
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
@@ -17,8 +20,6 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
-.coverage
-htmlcov/
 
 # Virtual environments
 venv/
@@ -26,7 +27,7 @@ env/
 ENV/
 .venv/
 
-# Build and distribution
+# Build artifacts
 dist/
 build/
 *.egg-info/
@@ -36,7 +37,7 @@ build/
 .env.local
 .env.*.local
 
-# Large model files (if any are accidentally included)
+# Model files (if accidentally included)
 *.bin
 *.safetensors
 *.pt
@@ -64,11 +65,11 @@ test_*.py
 tests/
 __tests__/
 
-# Documentation (keep only README)
+# Documentation
 *.md
 !README.md
 
-# Setup and script files
+# Scripts
 setup.py
 setup.cfg
 *.bat
@@ -81,7 +82,7 @@ setup.cfg
 *.swp
 *.swo
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -90,7 +91,7 @@ desktop.ini
 *.log
 logs/
 
-# Temporary files
+# Temporary
 tmp/
 temp/
 *.tmp
