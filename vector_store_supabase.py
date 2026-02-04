@@ -5,13 +5,20 @@ import os
 import logging
 from typing import List, Dict, Optional
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from config import settings
 import psycopg2
 from psycopg2.extras import execute_values, Json
 from psycopg2.pool import SimpleConnectionPool
 import hashlib
 import json
+
+# Optional import - only if not on Vercel
+try:
+    from sentence_transformers import SentenceTransformer
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    SentenceTransformer = None
 
 logger = logging.getLogger(__name__)
 
@@ -157,11 +164,16 @@ class SupabaseVectorStore:
         
         # Generate embeddings
         logger.info(f"Generating embeddings for {len(texts)} chunks...")
-        embeddings = self.embedding_model.encode(
-            texts,
-            show_progress_bar=True,
-            convert_to_numpy=True
-        )
+        if self.embedding_model:
+            # Use local model if available
+            embeddings = self.embedding_model.encode(
+                texts,
+                show_progress_bar=True,
+                convert_to_numpy=True
+            )
+        else:
+            # Use Hugging Face Inference API for embeddings on Vercel
+            embeddings = self._generate_embeddings_api(texts)
         
         # Generate IDs if not provided
         if ids is None:
@@ -229,10 +241,14 @@ class SupabaseVectorStore:
             List of search results
         """
         # Generate query embedding
-        query_embedding = self.embedding_model.encode(
-            query,
-            convert_to_numpy=True
-        ).tolist()
+        if self.embedding_model:
+            query_embedding = self.embedding_model.encode(
+                query,
+                convert_to_numpy=True
+            )
+        else:
+            # Use API for embeddings on Vercel
+            query_embedding = self._generate_embeddings_api([query])[0].tolist()
         
         # Build query
         conn = None

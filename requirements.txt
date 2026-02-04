@@ -1,8 +1,6 @@
 # Core RAG Dependencies
-chromadb==0.4.22
-sentence-transformers>=2.7.0
-langchain==0.1.0
-langchain-community==0.0.10
+# NOTE: sentence-transformers is optional - only needed for local mode
+# On Vercel, use requirements-vercel.txt instead
 
 # Document Processing
 PyPDF2==3.0.1
@@ -23,7 +21,7 @@ pydantic-settings==2.1.0
 # File handling
 aiofiles==23.2.1
 
-# HTTP requests for LLM API
+# HTTP requests for LLM API and embeddings
 requests==2.31.0
 huggingface_hub>=0.20.0
 
@@ -36,3 +34,9 @@ bcrypt==4.0.1
 # Supabase/PostgreSQL support
 psycopg2-binary==2.9.9
 pgvector==0.2.3
+
+# Optional: Only for local mode (not needed on Vercel)
+# chromadb==0.4.22
+# sentence-transformers>=2.7.0
+# langchain==0.1.0
+# langchain-community==0.0.10
