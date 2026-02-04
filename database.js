@@ -10,7 +10,12 @@ function getDatabaseUrl() {
   // Fallback to SUPABASE_DB_URL (direct connection, OK for local)
   const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DB_URL;
   if (!dbUrl) {
-    const errorMsg = "POSTGRES_URL or SUPABASE_DB_URL environment variable is required. Use POSTGRES_URL (pooler) for Vercel, SUPABASE_DB_URL (direct) for local.";
+    let errorMsg = "Database connection string not found. ";
+    if (process.env.VERCEL) {
+      errorMsg += "On Vercel, set POSTGRES_URL in Project Settings → Environment Variables. Use Supabase pooler connection: postgresql://postgres:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true";
+    } else {
+      errorMsg += "Set POSTGRES_URL (pooler) or SUPABASE_DB_URL (direct) in your .env file.";
+    }
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
@@ -134,7 +139,12 @@ const FilePermission = sequelize ? sequelize.define('FilePermission', {
 // Initialize database
 async function initDb() {
   if (!sequelize) {
-    const errorMsg = "Database connection not available. Check POSTGRES_URL environment variable.";
+    let errorMsg = "Database connection not available. ";
+    if (process.env.VERCEL) {
+      errorMsg += "Set POSTGRES_URL in Vercel Project Settings → Environment Variables. Use Supabase pooler connection.";
+    } else {
+      errorMsg += "Set POSTGRES_URL or SUPABASE_DB_URL in your .env file.";
+    }
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
