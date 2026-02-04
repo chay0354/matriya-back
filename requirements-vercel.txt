@@ -3,17 +3,16 @@
 # Embeddings will be done via Supabase or API calls
 
 # API Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
+flask==3.0.0
+flask-cors==4.0.0
+werkzeug==3.0.1
 
 # Utilities
 python-dotenv==1.0.0
 pydantic>=2.6.3,<3.0.0
 pydantic-settings==2.1.0
 
-# File handling
-aiofiles==23.2.1
+# File handling (synchronous for Flask)
 
 # HTTP requests for LLM API
 requests==2.31.0
