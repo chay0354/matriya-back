@@ -36,6 +36,8 @@ class Settings {
     // Supabase Settings (optional - only for Supabase client features)
     this.SUPABASE_URL = process.env.SUPABASE_URL || null;
     this.SUPABASE_KEY = process.env.SUPABASE_KEY || null;
+    // Keep SUPABASE_DB_URL for backward compatibility (fallback if POSTGRES_URL not set)
+    this.SUPABASE_DB_URL = process.env.SUPABASE_DB_URL || null;
     
     // LLM API Configuration (Together AI or Hugging Face)
     this.LLM_PROVIDER = process.env.LLM_PROVIDER || "together";

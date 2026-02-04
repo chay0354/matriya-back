@@ -4,15 +4,21 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import logger from './logger.js';
 
-// Get database URL - Supabase only (use POSTGRES_URL)
+// Get database URL - Supabase only
 function getDatabaseUrl() {
-  const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+  // Prefer POSTGRES_URL (pooler connection, best for Vercel)
+  // Fallback to SUPABASE_DB_URL (direct connection, OK for local)
+  const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DB_URL;
   if (!dbUrl) {
-    const errorMsg = "POSTGRES_URL environment variable is required. Set it to your Supabase pooler connection string.";
+    const errorMsg = "POSTGRES_URL or SUPABASE_DB_URL environment variable is required. Use POSTGRES_URL (pooler) for Vercel, SUPABASE_DB_URL (direct) for local.";
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
-  logger.info("Using Supabase PostgreSQL connection");
+  if (dbUrl.includes('pooler.supabase.com')) {
+    logger.info("Using Supabase PostgreSQL pooler connection");
+  } else {
+    logger.info("Using Supabase PostgreSQL direct connection");
+  }
   return dbUrl;
 }
 
