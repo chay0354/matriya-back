@@ -37,11 +37,30 @@ class User(Base):
 def get_database_url():
     """Get database URL based on DB_MODE"""
     if settings.DB_MODE.lower() == "supabase":
+        # Prefer pooler connection for serverless (Vercel)
+        # Check for POSTGRES_URL (pooler) first, then SUPABASE_DB_URL
+        pooler_url = os.getenv("POSTGRES_URL") or os.getenv("POSTGRES_PRISMA_URL")
+        if pooler_url and os.getenv("VERCEL"):
+            # Use pooler connection on Vercel (supports IPv4, better for serverless)
+            logger.info("Using Supabase pooler connection (serverless-optimized)")
+            return pooler_url
+        
         if not settings.SUPABASE_DB_URL:
-            error_msg = "SUPABASE_DB_URL must be set when DB_MODE=supabase. Please set it in Vercel environment variables."
+            error_msg = "SUPABASE_DB_URL or POSTGRES_URL must be set when DB_MODE=supabase. Please set it in Vercel environment variables."
             logger.error(error_msg)
             raise ValueError(error_msg)
-        return settings.SUPABASE_DB_URL
+        
+        # Use SUPABASE_DB_URL, but prefer pooler if available
+        db_url = settings.SUPABASE_DB_URL
+        
+        # If using direct connection, try to use pooler instead on Vercel
+        if os.getenv("VERCEL") and "pooler.supabase.com" not in db_url:
+            pooler_url = os.getenv("POSTGRES_URL")
+            if pooler_url:
+                logger.info("Switching to pooler connection for Vercel (IPv4 compatible)")
+                return pooler_url
+        
+        return db_url
     else:
         # Local SQLite
         if settings.SQLITE_DB_PATH:
@@ -99,18 +118,33 @@ if DATABASE_URL:
             separator = "?" if "?" not in DATABASE_URL else "&"
             DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=require"
         
-        engine = create_engine(
-            DATABASE_URL,
-            echo=False,
-            pool_pre_ping=True,  # Verify connections before using
-            pool_size=5,
-            max_overflow=10,
-            pool_timeout=30,  # Wait up to 30 seconds for a connection from pool
-            connect_args={
-                "connect_timeout": 10,  # 10 second connection timeout
-            }
-        )
-        logger.info(f"Using Supabase PostgreSQL database")
+        # For serverless (Vercel), use smaller pool and faster timeouts
+        if os.getenv("VERCEL"):
+            engine = create_engine(
+                DATABASE_URL,
+                echo=False,
+                pool_pre_ping=True,
+                pool_size=1,  # Smaller pool for serverless
+                max_overflow=2,  # Less overflow for serverless
+                pool_timeout=10,  # Faster timeout for serverless
+                connect_args={
+                    "connect_timeout": 5,  # Faster connection timeout
+                }
+            )
+            logger.info(f"Using Supabase PostgreSQL database (serverless-optimized)")
+        else:
+            engine = create_engine(
+                DATABASE_URL,
+                echo=False,
+                pool_pre_ping=True,
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=30,
+                connect_args={
+                    "connect_timeout": 10,
+                }
+            )
+            logger.info(f"Using Supabase PostgreSQL database")
 else:
     # On Vercel, create a dummy engine that will be replaced on first use
     engine = None
@@ -167,15 +201,28 @@ def get_db():
                 if "sslmode" not in DATABASE_URL.lower():
                     separator = "?" if "?" not in DATABASE_URL else "&"
                     DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=require"
-                engine = create_engine(
-                    DATABASE_URL,
-                    echo=False,
-                    pool_pre_ping=True,
-                    pool_size=5,
-                    max_overflow=10,
-                    pool_timeout=30,
-                    connect_args={"connect_timeout": 10}
-                )
+                
+                # For serverless (Vercel), use smaller pool
+                if os.getenv("VERCEL"):
+                    engine = create_engine(
+                        DATABASE_URL,
+                        echo=False,
+                        pool_pre_ping=True,
+                        pool_size=1,
+                        max_overflow=2,
+                        pool_timeout=10,
+                        connect_args={"connect_timeout": 5}
+                    )
+                else:
+                    engine = create_engine(
+                        DATABASE_URL,
+                        echo=False,
+                        pool_pre_ping=True,
+                        pool_size=5,
+                        max_overflow=10,
+                        pool_timeout=30,
+                        connect_args={"connect_timeout": 10}
+                    )
             SessionLocal = sessionmaker(
                 autocommit=False,
                 autoflush=False,

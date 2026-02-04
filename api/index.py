@@ -20,7 +20,7 @@ os.chdir(str(back_dir))
 try:
     from main import app
     
-    # Vercel expects the app to be exported
+    # Vercel expects the app to be exported as 'handler'
     # FastAPI is ASGI-compatible, so it works directly
     handler = app
 except Exception as e:
