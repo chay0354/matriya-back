@@ -44,8 +44,15 @@ app.add_middleware(
     max_age=3600,  # Cache preflight for 1 hour
 )
 
-# Initialize database
-init_db()
+# Initialize database (non-blocking on Vercel)
+try:
+    init_db()
+except Exception as e:
+    logger.error(f"Database initialization failed: {e}")
+    if os.getenv("VERCEL"):
+        logger.warning("Continuing without database initialization on Vercel - will retry on first use")
+    else:
+        raise
 
 # Include authentication router
 app.include_router(auth_router)
