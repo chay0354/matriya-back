@@ -3,14 +3,17 @@ Vercel serverless function wrapper for FastAPI
 Vercel Python runtime expects ASGI app
 """
 import sys
+import os
 from pathlib import Path
+
+# Set Vercel environment variable early
+os.environ["VERCEL"] = "1"
 
 # Add parent directory to path to import modules
 back_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(back_dir))
 
 # Change working directory for relative paths
-import os
 original_cwd = os.getcwd()
 os.chdir(str(back_dir))
 
@@ -23,4 +26,8 @@ try:
 except Exception as e:
     # Restore CWD on error
     os.chdir(original_cwd)
+    # Log error for debugging
+    import logging
+    logging.basicConfig(level=logging.ERROR)
+    logging.error(f"Error importing app: {e}", exc_info=True)
     raise
