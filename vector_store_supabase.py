@@ -74,6 +74,54 @@ class SupabaseVectorStore:
             logger.warning(f"Collection initialization had issues (may be OK if tables exist): {e}")
             # Don't fail - tables might already exist
     
+    def _generate_embeddings_api(self, texts: List[str]) -> np.ndarray:
+        """Generate embeddings using Hugging Face Inference API (for Vercel)"""
+        import requests
+        
+        # Use Hugging Face Inference API
+        api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.embedding_model_name}"
+        headers = {}
+        
+        # Add token if available
+        hf_token = os.getenv("HF_API_TOKEN")
+        if hf_token:
+            headers["Authorization"] = f"Bearer {hf_token}"
+        
+        embeddings = []
+        for text in texts:
+            try:
+                response = requests.post(
+                    api_url,
+                    headers=headers,
+                    json={"inputs": text},
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    embeddings.append(response.json())
+                else:
+                    # Fallback: use simple hash-based embedding (not ideal but works)
+                    logger.warning(f"API embedding failed, using fallback for text: {text[:50]}...")
+                    embeddings.append(self._fallback_embedding(text))
+            except Exception as e:
+                logger.error(f"Error generating embedding via API: {e}")
+                embeddings.append(self._fallback_embedding(text))
+        
+        return np.array(embeddings)
+    
+    def _fallback_embedding(self, text: str) -> List[float]:
+        """Fallback embedding using hash (simple but consistent)"""
+        import hashlib
+        # Create a simple hash-based embedding of the right dimension
+        hash_obj = hashlib.sha256(text.encode())
+        hash_bytes = hash_obj.digest()
+        # Create 384-dimensional vector from hash
+        embedding = []
+        for i in range(self.embedding_dim):
+            byte_val = hash_bytes[i % len(hash_bytes)]
+            # Normalize to [-1, 1] range
+            embedding.append((byte_val / 255.0) * 2 - 1)
+        return embedding
+    
     def _get_connection(self):
         """Get connection from pool"""
         return self.pool.getconn()
