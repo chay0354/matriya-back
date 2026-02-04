@@ -56,7 +56,10 @@ allowed_origins.extend([
     "file://",  # Allow file:// protocol for direct HTML opening
 ])
 
-# Add Vercel deployment URL if available
+# Add Vercel frontend URL (production)
+allowed_origins.append("https://matriya-front.vercel.app")
+
+# Add Vercel deployment URL if available (backend's own URL - for reference)
 vercel_url = os.getenv("VERCEL_URL")
 if vercel_url:
     allowed_origins.append(f"https://{vercel_url}")
