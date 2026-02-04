@@ -1,7 +1,7 @@
-# EXCLUDE EVERYTHING EXCEPT ESSENTIAL FILES
-# Only include what's absolutely necessary for the API
+# EXCLUDE EVERYTHING - Only include what's absolutely necessary
+# This file tells Vercel what NOT to upload
 
-# Data directories - NEVER deploy these
+# ALL data directories
 chroma_db/
 uploads/
 data/
@@ -9,14 +9,12 @@ models/
 checkpoints/
 weights/
 embeddings/
-
-# Database files
 *.db
 *.sqlite
 *.sqlite3
 users.db
 
-# Python cache and compiled
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
@@ -101,12 +99,17 @@ temp/
 # Git
 .git/
 
-# Node modules (if any)
+# Node modules
 node_modules/
 
-# Large binary files
+# Archives
 *.zip
 *.tar
 *.tar.gz
 *.rar
 *.7z
+
+# Large binary files
+*.exe
+*.dll
+*.dylib

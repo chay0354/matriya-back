@@ -11,5 +11,17 @@
       "src": "/(.*)",
       "dest": "api/index.py"
     }
+  ],
+  "ignore": [
+    "chroma_db/**",
+    "uploads/**",
+    "*.db",
+    "*.sqlite",
+    "*.sqlite3",
+    "__pycache__/**",
+    "*.pyc",
+    ".git/**",
+    "*.md",
+    "!README.md"
   ]
 }
