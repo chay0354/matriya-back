@@ -170,7 +170,7 @@ def init_db():
         return
     
     try:
-        Base.metadata.create_all(bind=engine)
+        ModelBase.metadata.create_all(bind=engine)
         logger.info("Database tables initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
