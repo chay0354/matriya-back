@@ -5,8 +5,7 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "250mb",
-        "runtime": "python3.9"
+        "maxLambdaSize": "250mb"
       }
     }
   ],
@@ -15,8 +14,5 @@
       "src": "/(.*)",
       "dest": "api/index.py"
     }
-  ],
-  "env": {
-    "VERCEL": "1"
-  }
+  ]
 }
