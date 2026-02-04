@@ -384,24 +384,54 @@ class SupabaseVectorStore:
             if conn:
                 self._return_connection(conn)
     
-    def delete_documents(self, ids: List[str]) -> bool:
-        """Delete documents by IDs"""
+    def delete_documents(self, ids: Optional[List[str]] = None, filter_metadata: Optional[Dict] = None) -> Dict:
+        """
+        Delete documents by IDs or filter metadata
+        
+        Args:
+            ids: List of document IDs to delete
+            filter_metadata: Metadata filter to delete matching documents
+            
+        Returns:
+            Dictionary with deletion results
+        """
         conn = None
         try:
             conn = self._get_connection()
             with conn.cursor() as cur:
-                cur.execute(
-                    f"DELETE FROM {self.collection_name} WHERE id = ANY(%s)",
-                    (ids,)
-                )
+                if ids:
+                    # Delete by IDs
+                    placeholders = ','.join(['%s'] * len(ids))
+                    cur.execute(
+                        f"DELETE FROM {self.collection_name} WHERE id IN ({placeholders})",
+                        ids
+                    )
+                    deleted_count = cur.rowcount
+                elif filter_metadata:
+                    # Delete by metadata filter
+                    conditions = []
+                    params = []
+                    for key, value in filter_metadata.items():
+                        conditions.append(f"metadata->>'{key}' = %s")
+                        params.append(value)
+                    where_clause = "WHERE " + " AND ".join(conditions)
+                    
+                    cur.execute(
+                        f"DELETE FROM {self.collection_name} {where_clause}",
+                        params
+                    )
+                    deleted_count = cur.rowcount
+                else:
+                    return {"deleted_count": 0, "error": "Either ids or filter_metadata must be provided"}
+                
                 conn.commit()
-                logger.info(f"Deleted {len(ids)} documents")
-                return True
+                logger.info(f"Deleted {deleted_count} documents")
+                return {"deleted_count": deleted_count}
         except Exception as e:
             if conn:
                 conn.rollback()
             logger.error(f"Error deleting documents: {e}")
-            return False
+            return {"deleted_count": 0, "error": str(e)}
         finally:
             if conn:
                 self._return_connection(conn)

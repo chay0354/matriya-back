@@ -49,6 +49,18 @@ CREATE INDEX IF NOT EXISTS documents_metadata_filename_idx
 ON documents 
 USING BTREE ((metadata->>'filename'));
 
+-- Step 8: Create file_permissions table (for user file access control)
+CREATE TABLE IF NOT EXISTS file_permissions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    filename VARCHAR NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Step 9: Create indexes for file_permissions table
+CREATE INDEX IF NOT EXISTS file_permissions_user_id_idx ON file_permissions(user_id);
+CREATE INDEX IF NOT EXISTS file_permissions_filename_idx ON file_permissions(filename);
+
 -- ============================================================================
 -- Verification Queries (optional - run to check everything is set up)
 -- ============================================================================
@@ -58,7 +70,7 @@ USING BTREE ((metadata->>'filename'));
 
 -- Check if tables exist:
 -- SELECT table_name FROM information_schema.tables 
--- WHERE table_schema = 'public' AND table_name IN ('users', 'documents');
+-- WHERE table_schema = 'public' AND table_name IN ('users', 'documents', 'file_permissions');
 
 -- Check if indexes exist:
 -- SELECT indexname FROM pg_indexes 

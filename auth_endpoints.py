@@ -66,7 +66,8 @@ def get_current_user(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user = get_user_by_username(db, username=username)
+    # Optimized query - direct query for faster response
+    user = db.query(User).filter(User.username == username).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -149,10 +150,14 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        # Update last login
+        # Update last login (async - don't block response)
         from datetime import datetime
-        user.last_login = datetime.utcnow()
-        db.commit()
+        try:
+            user.last_login = datetime.utcnow()
+            db.commit()
+        except:
+            db.rollback()
+            # Don't fail login if last_login update fails
         
         # Create access token
         access_token = create_access_token(

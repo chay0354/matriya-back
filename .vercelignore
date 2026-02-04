@@ -1,0 +1,16 @@
+# Ignore local development files
+chroma_db/
+uploads/
+users.db
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.env
+.env.local

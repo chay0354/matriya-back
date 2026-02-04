@@ -1,7 +1,7 @@
 """
 Database setup for user management - supports both local SQLite and Supabase PostgreSQL
 """
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -54,6 +54,16 @@ def get_database_url():
 DATABASE_URL = get_database_url()
 is_sqlite = DATABASE_URL.startswith("sqlite")
 
+
+class FilePermission(Base):
+    """File permission model - stores which files users can access"""
+    __tablename__ = "file_permissions"
+    
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    filename = Column(String, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 if is_sqlite:
     engine = create_engine(
         DATABASE_URL,
@@ -81,8 +91,13 @@ else:
     )
     logger.info(f"Using Supabase PostgreSQL database")
 
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create session factory with optimized settings
+SessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=engine,
+    expire_on_commit=False  # Faster - don't expire objects on commit
+)
 
 
 def init_db():
