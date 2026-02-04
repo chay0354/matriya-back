@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from config import settings
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -82,32 +83,38 @@ class FilePermission(Base):
     filename = Column(String, nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-if is_sqlite:
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args={"check_same_thread": False},  # Needed for SQLite
-        echo=False
-    )
-    logger.info(f"Using local SQLite database: {DATABASE_URL}")
+# Create engine only if DATABASE_URL is available
+if DATABASE_URL:
+    if is_sqlite:
+        engine = create_engine(
+            DATABASE_URL,
+            connect_args={"check_same_thread": False},  # Needed for SQLite
+            echo=False
+        )
+        logger.info(f"Using local SQLite database: {DATABASE_URL}")
+    else:
+        # Parse connection string to add SSL mode if not present
+        if "sslmode" not in DATABASE_URL.lower():
+            # Add sslmode if connection string doesn't have it
+            separator = "?" if "?" not in DATABASE_URL else "&"
+            DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=require"
+        
+        engine = create_engine(
+            DATABASE_URL,
+            echo=False,
+            pool_pre_ping=True,  # Verify connections before using
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,  # Wait up to 30 seconds for a connection from pool
+            connect_args={
+                "connect_timeout": 10,  # 10 second connection timeout
+            }
+        )
+        logger.info(f"Using Supabase PostgreSQL database")
 else:
-    # Parse connection string to add SSL mode if not present
-    if "sslmode" not in DATABASE_URL.lower():
-        # Add sslmode if connection string doesn't have it
-        separator = "?" if "?" not in DATABASE_URL else "&"
-        DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=require"
-    
-    engine = create_engine(
-        DATABASE_URL,
-        echo=False,
-        pool_pre_ping=True,  # Verify connections before using
-        pool_size=5,
-        max_overflow=10,
-        pool_timeout=30,  # Wait up to 30 seconds for a connection from pool
-        connect_args={
-            "connect_timeout": 10,  # 10 second connection timeout
-        }
-    )
-    logger.info(f"Using Supabase PostgreSQL database")
+    # On Vercel, create a dummy engine that will be replaced on first use
+    engine = None
+    logger.warning("Database engine not initialized - will be created on first use")
 
 # Create session factory with optimized settings
 # Will be recreated when engine is available
@@ -144,6 +151,44 @@ def init_db():
 # Dependency to get DB session
 def get_db():
     """Get database session"""
+    # Lazy initialization if engine wasn't available at startup
+    global engine, SessionLocal, DATABASE_URL, is_sqlite
+    if not engine or not SessionLocal:
+        try:
+            DATABASE_URL = get_database_url()
+            is_sqlite = DATABASE_URL.startswith("sqlite")
+            if is_sqlite:
+                engine = create_engine(
+                    DATABASE_URL,
+                    connect_args={"check_same_thread": False},
+                    echo=False
+                )
+            else:
+                if "sslmode" not in DATABASE_URL.lower():
+                    separator = "?" if "?" not in DATABASE_URL else "&"
+                    DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=require"
+                engine = create_engine(
+                    DATABASE_URL,
+                    echo=False,
+                    pool_pre_ping=True,
+                    pool_size=5,
+                    max_overflow=10,
+                    pool_timeout=30,
+                    connect_args={"connect_timeout": 10}
+                )
+            SessionLocal = sessionmaker(
+                autocommit=False,
+                autoflush=False,
+                bind=engine,
+                expire_on_commit=False
+            )
+            # Create tables on first use
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database engine initialized on first use")
+        except Exception as e:
+            logger.error(f"Failed to initialize database on first use: {e}")
+            raise
+    
     db = SessionLocal()
     try:
         yield db
