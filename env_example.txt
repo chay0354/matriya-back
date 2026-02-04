@@ -2,8 +2,8 @@
 # For Vercel: Set these in Vercel Dashboard → Settings → Environment Variables
 
 # Database (Supabase PostgreSQL) - REQUIRED
-# Use pooler connection (required for Vercel, recommended for all)
-POSTGRES_URL=postgresql://postgres:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true
+# Use POSTGRES_URL from Supabase Dashboard → Settings → Database → Connection string (Session mode)
+POSTGRES_URL=postgres://postgres.[PROJECT_REF]:[PASSWORD]@aws-1-[REGION].pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true
 
 # Supabase (optional, for Supabase client features)
 SUPABASE_URL=https://[PROJECT].supabase.co
