@@ -12,11 +12,12 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# Base class for models
-Base = declarative_base()
+# Base class for models - renamed to avoid Vercel handler detection conflicts
+# Vercel's handler code looks for 'Base' and tries issubclass() which fails
+ModelBase = declarative_base()
 
 
-class User(Base):
+class User(ModelBase):
     """User model"""
     __tablename__ = "users"
     
@@ -92,7 +93,7 @@ except Exception as e:
         raise
 
 
-class FilePermission(Base):
+class FilePermission(ModelBase):
     """File permission model - stores which files users can access"""
     __tablename__ = "file_permissions"
     
@@ -229,7 +230,7 @@ def get_db():
                 expire_on_commit=False
             )
             # Create tables on first use
-            Base.metadata.create_all(bind=engine)
+            ModelBase.metadata.create_all(bind=engine)
             logger.info("Database engine initialized on first use")
         except Exception as e:
             logger.error(f"Failed to initialize database on first use: {e}")
