@@ -15,7 +15,6 @@ from database import init_db, get_db
 from auth_endpoints import router as auth_router
 from admin_endpoints import router as admin_router
 from state_machine import Kernel, StateMachine
-from admin_endpoints import router as admin_router
 
 # Configure logging
 logging.basicConfig(

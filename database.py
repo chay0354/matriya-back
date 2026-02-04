@@ -107,7 +107,12 @@ def init_db():
         logger.info("Database tables initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
-        raise
+        # On Vercel, don't fail if database connection isn't ready yet
+        # Tables will be created on first use
+        if os.getenv("VERCEL"):
+            logger.warning("Database initialization failed on Vercel, will retry on first use")
+        else:
+            raise
 
 
 # Dependency to get DB session

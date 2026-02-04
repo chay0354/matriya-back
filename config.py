@@ -56,7 +56,18 @@ class Settings(BaseSettings):
 
 # Create directories if they don't exist
 settings = Settings()
-# Only create local directories if in local mode
-if settings.DB_MODE.lower() == "local":
-    Path(settings.CHROMA_DB_PATH).mkdir(parents=True, exist_ok=True)
-Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+# Only create local directories if in local mode and not on Vercel
+if settings.DB_MODE.lower() == "local" and not os.getenv("VERCEL"):
+    try:
+        Path(settings.CHROMA_DB_PATH).mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        # On Vercel, we don't need local directories
+        pass
+
+# Only create uploads directory if not on Vercel (Vercel uses /tmp)
+if not os.getenv("VERCEL"):
+    try:
+        Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        # On Vercel, we'll use /tmp for uploads
+        pass
