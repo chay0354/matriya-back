@@ -6,7 +6,7 @@ import sys
 import os
 from pathlib import Path
 
-# Set Vercel environment variable early
+# Set Vercel environment variable early - MUST be first
 os.environ["VERCEL"] = "1"
 
 # Add parent directory to path to import modules
@@ -17,17 +17,11 @@ sys.path.insert(0, str(back_dir))
 original_cwd = os.getcwd()
 os.chdir(str(back_dir))
 
-try:
-    from main import app
-    
-    # Vercel expects the app to be exported as 'handler'
-    # FastAPI is ASGI-compatible, so it works directly
-    handler = app
-except Exception as e:
-    # Restore CWD on error
-    os.chdir(original_cwd)
-    # Log error for debugging
-    import logging
-    logging.basicConfig(level=logging.ERROR)
-    logging.error(f"Error importing app: {e}", exc_info=True)
-    raise
+# Import app - this must happen at module level for Vercel
+from main import app
+
+# Vercel expects the app to be exported as 'handler'
+# FastAPI is ASGI-compatible, so it works directly
+# Export both 'handler' and 'app' for compatibility
+handler = app
+__all__ = ['handler', 'app']
