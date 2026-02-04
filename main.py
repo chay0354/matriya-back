@@ -39,12 +39,13 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 
 # CORS middleware - Allow all origins (no restrictions)
+# Note: When using allow_origins=["*"], allow_credentials must be False
 logger.info("CORS configured to allow all origins")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins
-    allow_credentials=True,
+    allow_credentials=False,  # Must be False when using wildcard
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
     expose_headers=["*"],
