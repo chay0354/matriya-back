@@ -20,20 +20,21 @@ function getDatabaseUrl() {
     return poolerUrl;
   }
   
-  // Fallback to SUPABASE_DB_URL if POSTGRES_URL not set
-  if (!settings.SUPABASE_DB_URL) {
-    const errorMsg = "POSTGRES_URL or SUPABASE_DB_URL must be set. For Vercel, use POSTGRES_URL (pooler connection).";
+  // On Vercel, REQUIRE pooler connection - direct connections will fail
+  if (process.env.VERCEL) {
+    const errorMsg = "POSTGRES_URL (pooler connection) is REQUIRED on Vercel. Direct connections (SUPABASE_DB_URL) will fail. Set POSTGRES_URL in Vercel environment variables with format: postgresql://postgres:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true";
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
   
-  // Warn if using direct connection on Vercel
-  const dbUrl = settings.SUPABASE_DB_URL;
-  if (process.env.VERCEL && !dbUrl.includes("pooler.supabase.com")) {
-    logger.warn("Using direct connection on Vercel - this may fail with IPv6. Set POSTGRES_URL for pooler connection.");
+  // Fallback to SUPABASE_DB_URL if POSTGRES_URL not set (only for non-Vercel)
+  if (!settings.SUPABASE_DB_URL) {
+    const errorMsg = "POSTGRES_URL or SUPABASE_DB_URL must be set.";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
   
-  return dbUrl;
+  return settings.SUPABASE_DB_URL;
 }
 
 // Create Sequelize instance
