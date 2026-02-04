@@ -30,19 +30,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Initialize database
-init_db()
-
-# Include authentication router
-app.include_router(auth_router)
-# Include admin router
-app.include_router(admin_router)
-
-# CORS middleware - Allow all origins (no restrictions)
-# Note: When using allow_origins=["*"], allow_credentials must be False
+# CORS middleware - MUST be added FIRST, before any routes
+# Allow all origins (no restrictions)
 logger.info("CORS configured to allow all origins")
 
-# Add CORS middleware BEFORE any routes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins
@@ -52,6 +43,14 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=3600,  # Cache preflight for 1 hour
 )
+
+# Initialize database
+init_db()
+
+# Include authentication router
+app.include_router(auth_router)
+# Include admin router
+app.include_router(admin_router)
 
 # Initialize RAG service (lazy initialization to avoid blocking startup)
 rag_service = None
