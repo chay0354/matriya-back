@@ -1,0 +1,40 @@
+# RAG System Configuration
+
+# Database Mode: "local" or "supabase"
+# - local: Uses ChromaDB (vector) + SQLite (users)
+# - supabase: Uses Supabase PostgreSQL with pgvector
+DB_MODE=local
+
+# Vector Database (local mode only)
+CHROMA_DB_PATH=./chroma_db
+COLLECTION_NAME=documents
+
+# Embedding Model
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# Document Processing
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=52428800
+
+# Chunking Settings
+CHUNK_SIZE=500
+CHUNK_OVERLAP=100
+
+# API Settings
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Supabase Settings (required when DB_MODE=supabase)
+# Get these from your Supabase project settings
+# SUPABASE_URL=https://your-project.supabase.co
+# SUPABASE_KEY=your-supabase-anon-key
+# SUPABASE_DB_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT].supabase.co:5432/postgres
+
+# LLM API Configuration
+LLM_PROVIDER=together
+TOGETHER_API_KEY=your-together-api-key
+TOGETHER_MODEL=mistralai/Mistral-7B-Instruct-v0.2
+
+# Hugging Face (backup)
+HF_API_TOKEN=your-hf-token
+HF_MODEL=microsoft/phi-2
