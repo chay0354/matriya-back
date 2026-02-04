@@ -88,15 +88,13 @@ try {
   }
 } catch (e) {
   logger.error(`Failed to get database URL: ${e.message}`);
-  // On Vercel, we can continue without DB connection for now
-  // It will be retried when actually needed
-  if (process.env.VERCEL) {
-    DATABASE_URL = null;
-    sequelize = null;
-    logger.warn("Database URL not available on Vercel startup, will retry on first use");
-  } else {
-    throw e;
-  }
+  // On Vercel, throw error immediately - don't set sequelize to null
+  // This ensures we get a clear error message instead of null User model
+  DATABASE_URL = null;
+  sequelize = null;
+  // Don't throw here - let it fail when User model is accessed
+  // This way we get a better error message from initDb()
+  logger.error("Database connection not available. Set POSTGRES_URL environment variable.");
 }
 
 // Define User model - will be null if sequelize is null (connection failed)
