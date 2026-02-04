@@ -3,6 +3,8 @@ Database setup for user management - supports both local SQLite and Supabase Pos
 """
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, UniqueConstraint
 # Import declarative_base dynamically to avoid Vercel detection
+# Vercel's handler code scans for variables with 'base' in name and tries issubclass()
+# We use dynamic import and function calls to avoid exposing any 'base' variables
 import importlib
 _sqlalchemy_declarative = importlib.import_module('sqlalchemy.ext.declarative')
 _create_model_class = _sqlalchemy_declarative.declarative_base
@@ -15,10 +17,12 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# Base class for models - using function to create to avoid Vercel handler detection
-# Vercel's handler code scans for variables with 'base' in name and tries issubclass()
+# Model class - using function to create to avoid Vercel handler detection
 # By using a function call, we avoid exposing 'declarative_base' or 'base' in module namespace
 DBModel = _create_model_class()
+# Immediately delete the function reference to avoid Vercel scanning
+del _create_model_class
+del _sqlalchemy_declarative
 
 # Explicitly control what gets exported to avoid Vercel scanning internal variables
 __all__ = [
