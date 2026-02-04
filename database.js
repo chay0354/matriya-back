@@ -6,14 +6,24 @@ import logger from './logger.js';
 
 // Get database URL - Supabase only (simplest possible)
 function getDatabaseUrl() {
-  // Use POSTGRES_URL (should be set in environment variables)
-  const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+  // Prefer POSTGRES_URL (pooler, works on Vercel and local)
+  // Fallback to SUPABASE_DB_URL (direct, for local development only)
+  const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DB_URL;
   if (!dbUrl) {
-    const errorMsg = "POSTGRES_URL environment variable is required. Set it in Vercel Dashboard → Settings → Environment Variables.";
+    let errorMsg = "Database connection string not found. ";
+    if (process.env.VERCEL) {
+      errorMsg += "Set POSTGRES_URL in Vercel Dashboard → Settings → Environment Variables. Use Supabase pooler connection.";
+    } else {
+      errorMsg += "Set POSTGRES_URL (pooler) or SUPABASE_DB_URL (direct) in your .env file.";
+    }
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
-  logger.info("Using Supabase PostgreSQL connection");
+  if (dbUrl.includes('pooler.supabase.com')) {
+    logger.info("Using Supabase PostgreSQL pooler connection");
+  } else {
+    logger.info("Using Supabase PostgreSQL direct connection");
+  }
   return dbUrl;
 }
 
@@ -24,8 +34,13 @@ let DATABASE_URL;
 try {
   DATABASE_URL = getDatabaseUrl();
   
-  // Clean connection string - remove SSL parameters (handled in dialectOptions)
-  let dbUrl = DATABASE_URL.replace(/[?&](sslmode|ssl)=[^&]*/gi, '').replace(/\?&/, '?').replace(/&&/, '&').replace(/[?&]$/, '');
+  // Clean connection string - remove ALL query parameters (handled in dialectOptions)
+  // Parse URL to extract base connection string without query params
+  let dbUrl = DATABASE_URL;
+  const urlMatch = dbUrl.match(/^(postgres(?:ql)?:\/\/[^?]+)/i);
+  if (urlMatch) {
+    dbUrl = urlMatch[1]; // Get base URL without query parameters
+  }
   
   // Pool configuration (optimized for serverless)
   const poolConfig = {
