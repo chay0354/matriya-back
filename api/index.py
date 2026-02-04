@@ -1,25 +1,16 @@
 """
-Vercel serverless function wrapper for FastAPI
+Vercel serverless function - FastAPI ASGI app
+Minimal wrapper to avoid Vercel handler detection issues
 """
-import sys
 import os
-from pathlib import Path
-
-# CRITICAL: Set Vercel flag FIRST - before ANY other imports
 os.environ["VERCEL"] = "1"
 
-# Setup paths
-_back_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(_back_dir))
-os.chdir(str(_back_dir))
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+os.chdir(str(Path(__file__).parent.parent))
 
-# Import app - must be at module level for Vercel
 from main import app
 
-# Export handler - Vercel's Python runtime expects this exact name
-# Explicitly mark as ASGI app to avoid handler detection issues
+# Vercel expects 'handler' - export FastAPI app directly
 handler = app
-
-# Clean up local variables to avoid Vercel handler detection confusion
-del _back_dir
-del sys, os, Path
