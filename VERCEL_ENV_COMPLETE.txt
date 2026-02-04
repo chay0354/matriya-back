@@ -1,0 +1,48 @@
+# Complete Vercel Environment Variables
+# Copy these to Vercel Dashboard → Settings → Environment Variables
+
+# ============================================
+# REQUIRED - Database Configuration
+# ============================================
+DB_MODE=supabase
+
+# CRITICAL: Use pooler connection (port 6543) for Vercel serverless
+# This uses IPv4 and works on Vercel (direct connection uses IPv6 and fails)
+POSTGRES_URL=postgres://postgres.tymorwyygffvruqdtwal:Chaymoalem123@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true
+
+# Fallback direct connection (only used if POSTGRES_URL not set)
+# WARNING: This may fail on Vercel due to IPv6 issues
+SUPABASE_DB_URL=postgresql://postgres:Chaymoalem123@db.tymorwyygffvruqdtwal.supabase.co:5432/postgres?sslmode=require
+
+# ============================================
+# Supabase API Settings
+# ============================================
+SUPABASE_URL=https://tymorwyygffvruqdtwal.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bW9yd3l5Z2ZmdnJ1cWR0d2FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMjM3OTQsImV4cCI6MjA4NTY5OTc5NH0.o7VavWVpWCY7SuN-HnBs2P6_5O4CecxH--e-_rSMpJ0
+
+# ============================================
+# LLM API Configuration
+# ============================================
+LLM_PROVIDER=together
+TOGETHER_API_KEY=tgp_v1_GWxt5OkR-WjuJrC6Yya8UXykB4KNZMPC8bcuNbnwJ-I
+TOGETHER_MODEL=Qwen/Qwen3-Next-80B-A3B-Instruct
+
+# Hugging Face (backup/alternative)
+HF_API_TOKEN=your-huggingface-token-here
+HF_MODEL=microsoft/phi-2
+
+# ============================================
+# Optional Settings (have defaults)
+# ============================================
+# Vector Database (not used in Supabase mode, but can be set)
+COLLECTION_NAME=documents
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# Document Processing
+MAX_FILE_SIZE=52428800
+CHUNK_SIZE=500
+CHUNK_OVERLAP=100
+
+# JWT Secret Key (optional - auto-generated if not set)
+# Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+# SECRET_KEY=your-generated-secret-key-here
