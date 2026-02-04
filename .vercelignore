@@ -1,7 +1,12 @@
-# Ignore local development files
+# Ignore ALL local development files and data
 chroma_db/
 uploads/
 users.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache and compiled files
 __pycache__/
 *.pyc
 *.pyo
@@ -10,12 +15,28 @@ __pycache__/
 *.so
 *.egg
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Build and distribution
 dist/
 build/
+*.egg-info/
+
+# Environment files
 .env
 .env.local
+.env.*.local
 
-# Ignore large model files and cache
+# Large model files (if any are accidentally included)
 *.bin
 *.safetensors
 *.pt
@@ -28,35 +49,48 @@ build/
 *.pkl
 *.joblib
 *.model
+*.weights
 
-# Ignore ChromaDB data files
-*.sqlite3
-*.db
-*.sqlite
-
-# Ignore Python virtual environments
-venv/
-env/
-ENV/
-.venv/
-
-# Ignore large data directories
+# Data directories
 data/
 models/
 checkpoints/
 weights/
+embeddings/
 
-# Ignore test files
+# Test files
 test_*.py
 *_test.py
 tests/
+__tests__/
 
-# Ignore documentation that's not needed
+# Documentation (keep only README)
 *.md
 !README.md
 
-# Ignore setup files
+# Setup and script files
 setup.py
 setup.cfg
 *.bat
 *.sh
+*.ps1
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
