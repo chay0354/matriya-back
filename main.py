@@ -42,13 +42,15 @@ app.include_router(admin_router)
 # Note: When using allow_origins=["*"], allow_credentials must be False
 logger.info("CORS configured to allow all origins")
 
+# Add CORS middleware BEFORE any routes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins
     allow_credentials=False,  # Must be False when using wildcard
-    allow_methods=["*"],  # Allow all methods
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],  # Explicit methods
     allow_headers=["*"],  # Allow all headers
     expose_headers=["*"],
+    max_age=3600,  # Cache preflight for 1 hour
 )
 
 # Initialize RAG service (lazy initialization to avoid blocking startup)
