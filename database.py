@@ -2,7 +2,7 @@
 Database setup for user management - supports both local SQLite and Supabase PostgreSQL
 """
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base as _create_model_class
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 from pathlib import Path
@@ -14,10 +14,11 @@ logger = logging.getLogger(__name__)
 
 # Base class for models - renamed to avoid Vercel handler detection conflicts
 # Vercel's handler code looks for 'Base' and tries issubclass() which fails
-ModelBase = declarative_base()
+# Using DBModel instead of ModelBase to avoid any "base" substring detection
+DBModel = _create_model_class()
 
 
-class User(ModelBase):
+class User(DBModel):
     """User model"""
     __tablename__ = "users"
     
@@ -93,7 +94,7 @@ except Exception as e:
         raise
 
 
-class FilePermission(ModelBase):
+class FilePermission(DBModel):
     """File permission model - stores which files users can access"""
     __tablename__ = "file_permissions"
     
@@ -170,7 +171,7 @@ def init_db():
         return
     
     try:
-        ModelBase.metadata.create_all(bind=engine)
+        DBModel.metadata.create_all(bind=engine)
         logger.info("Database tables initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
@@ -230,7 +231,7 @@ def get_db():
                 expire_on_commit=False
             )
             # Create tables on first use
-            ModelBase.metadata.create_all(bind=engine)
+            DBModel.metadata.create_all(bind=engine)
             logger.info("Database engine initialized on first use")
         except Exception as e:
             logger.error(f"Failed to initialize database on first use: {e}")
