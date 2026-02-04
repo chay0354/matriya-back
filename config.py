@@ -7,10 +7,11 @@ os.environ['ANONYMIZED_TELEMETRY'] = 'False'
 os.environ['CHROMA_TELEMETRY_DISABLED'] = 'True'
 
 from pathlib import Path
-from pydantic_settings import BaseSettings
+# Import BaseSettings with alias to avoid Vercel handler detection issues
+from pydantic_settings import BaseSettings as _PydanticBaseSettings
 from typing import Optional
 
-class Settings(BaseSettings):
+class Settings(_PydanticBaseSettings):
     # Vector Database Settings
     CHROMA_DB_PATH: str = "./chroma_db"
     COLLECTION_NAME: str = "documents"
