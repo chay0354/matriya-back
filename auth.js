@@ -55,6 +55,9 @@ export function verifyToken(token) {
  * Get user by username
  */
 export async function getUserByUsername(username) {
+  if (!User) {
+    throw new Error("Database not initialized. User model is not available.");
+  }
   return await User.findOne({ where: { username } });
 }
 
@@ -62,6 +65,9 @@ export async function getUserByUsername(username) {
  * Get user by email
  */
 export async function getUserByEmail(email) {
+  if (!User) {
+    throw new Error("Database not initialized. User model is not available.");
+  }
   return await User.findOne({ where: { email } });
 }
 
@@ -86,6 +92,9 @@ export async function authenticateUser(username, password) {
  * Create a new user
  */
 export async function createUser(username, email, password, fullName = null) {
+  if (!User) {
+    throw new Error("Database not initialized. User model is not available.");
+  }
   const hashedPassword = getPasswordHash(password);
   const user = await User.create({
     username,

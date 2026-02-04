@@ -99,7 +99,7 @@ try {
   }
 }
 
-// Define User model
+// Define User model - will be null if sequelize is null (connection failed)
 const User = sequelize ? sequelize.define('User', {
   id: {
     type: DataTypes.INTEGER,
@@ -172,23 +172,20 @@ const FilePermission = sequelize ? sequelize.define('FilePermission', {
 // Initialize database
 async function initDb() {
   if (!sequelize) {
-    logger.warn("Database engine not available, skipping initialization");
-    return;
+    const errorMsg = "Database connection not available. Check POSTGRES_URL environment variable.";
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
   
   try {
     await sequelize.authenticate();
+    logger.info("Database connection authenticated");
     await sequelize.sync({ alter: false }); // Use sync for simplicity, alter: false to avoid modifying existing tables
     logger.info("Database tables initialized successfully");
   } catch (e) {
     logger.error(`Error initializing database: ${e.message}`);
-    // On Vercel, don't fail if database connection isn't ready yet
-    // Tables will be created on first use
-    if (process.env.VERCEL) {
-      logger.warn("Database initialization failed on Vercel, will retry on first use");
-    } else {
-      throw e;
-    }
+    logger.error(`Stack: ${e.stack}`);
+    throw e;
   }
 }
 

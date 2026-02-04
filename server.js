@@ -28,8 +28,12 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
   allowedHeaders: "*",
   exposedHeaders: "*",
+  credentials: true,
   maxAge: 3600
 }));
+
+// Handle preflight requests explicitly
+app.options('*', cors());
 
 // Body parsing middleware with UTF-8 support
 app.use(express.json({ charset: 'utf-8' }));
