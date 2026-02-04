@@ -37,7 +37,9 @@ def get_database_url():
     """Get database URL based on DB_MODE"""
     if settings.DB_MODE.lower() == "supabase":
         if not settings.SUPABASE_DB_URL:
-            raise ValueError("SUPABASE_DB_URL must be set when DB_MODE=supabase")
+            error_msg = "SUPABASE_DB_URL must be set when DB_MODE=supabase. Please set it in Vercel environment variables."
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         return settings.SUPABASE_DB_URL
     else:
         # Local SQLite
@@ -46,13 +48,29 @@ def get_database_url():
         else:
             # Auto-generate path next to chroma_db
             db_path = Path(settings.CHROMA_DB_PATH).parent / "users.db"
-        db_path.parent.mkdir(parents=True, exist_ok=True)
+        # Only try to create directory if not on Vercel
+        if not os.getenv("VERCEL"):
+            try:
+                db_path.parent.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                logger.warning(f"Could not create directory for SQLite DB: {e}")
         return f"sqlite:///{db_path}"
 
 
-# Create engine based on mode
-DATABASE_URL = get_database_url()
-is_sqlite = DATABASE_URL.startswith("sqlite")
+# Create engine based on mode - handle errors gracefully
+try:
+    DATABASE_URL = get_database_url()
+    is_sqlite = DATABASE_URL.startswith("sqlite")
+except Exception as e:
+    logger.error(f"Failed to get database URL: {e}")
+    # On Vercel, we can continue without DB connection for now
+    # It will be retried when actually needed
+    if os.getenv("VERCEL"):
+        DATABASE_URL = None
+        is_sqlite = False
+        logger.warning("Database URL not available on Vercel startup, will retry on first use")
+    else:
+        raise
 
 
 class FilePermission(Base):
@@ -92,16 +110,24 @@ else:
     logger.info(f"Using Supabase PostgreSQL database")
 
 # Create session factory with optimized settings
-SessionLocal = sessionmaker(
-    autocommit=False, 
-    autoflush=False, 
-    bind=engine,
-    expire_on_commit=False  # Faster - don't expire objects on commit
-)
+# Will be recreated when engine is available
+if engine:
+    SessionLocal = sessionmaker(
+        autocommit=False, 
+        autoflush=False, 
+        bind=engine,
+        expire_on_commit=False  # Faster - don't expire objects on commit
+    )
+else:
+    SessionLocal = None
 
 
 def init_db():
     """Initialize database tables"""
+    if not engine:
+        logger.warning("Database engine not available, skipping initialization")
+        return
+    
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables initialized successfully")
