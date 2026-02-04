@@ -5,8 +5,7 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "50mb",
-        "includeFiles": "api/**,*.py,requirements*.txt,config.py"
+        "maxLambdaSize": "50mb"
       }
     }
   ],
@@ -21,16 +20,5 @@
       "maxDuration": 60,
       "memory": 3008
     }
-  },
-  "ignore": [
-    "chroma_db/**",
-    "uploads/**",
-    "*.db",
-    "*.sqlite",
-    "*.sqlite3",
-    "__pycache__/**",
-    "*.pyc",
-    "*.pyo",
-    ".git/**"
-  ]
+  }
 }

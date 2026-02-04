@@ -1,15 +1,22 @@
-# CRITICAL: Exclude all data directories and large files
-# These should NEVER be deployed to Vercel
+# EXCLUDE EVERYTHING EXCEPT ESSENTIAL FILES
+# Only include what's absolutely necessary for the API
 
-# Database directories and files
+# Data directories - NEVER deploy these
 chroma_db/
 uploads/
+data/
+models/
+checkpoints/
+weights/
+embeddings/
+
+# Database files
 *.db
 *.sqlite
 *.sqlite3
 users.db
 
-# Python cache
+# Python cache and compiled
 __pycache__/
 *.pyc
 *.pyo
@@ -20,6 +27,8 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
+.coverage
+htmlcov/
 
 # Virtual environments
 venv/
@@ -37,7 +46,7 @@ build/
 .env.local
 .env.*.local
 
-# Model files (if accidentally included)
+# Model files
 *.bin
 *.safetensors
 *.pt
@@ -51,13 +60,6 @@ build/
 *.joblib
 *.model
 *.weights
-
-# Data directories
-data/
-models/
-checkpoints/
-weights/
-embeddings/
 
 # Test files
 test_*.py
@@ -95,3 +97,16 @@ logs/
 tmp/
 temp/
 *.tmp
+
+# Git
+.git/
+
+# Node modules (if any)
+node_modules/
+
+# Large binary files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
