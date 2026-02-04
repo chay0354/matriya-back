@@ -12,10 +12,26 @@ import {
   createAccessToken,
   ACCESS_TOKEN_EXPIRE_MINUTES_EXPORT as ACCESS_TOKEN_EXPIRE_MINUTES
 } from './auth.js';
-import { getDb } from './database.js';
+import { getDb, initDb } from './database.js';
 import logger from './logger.js';
 
 const router = express.Router();
+
+// Middleware to ensure database is initialized (for Vercel serverless)
+let dbInitialized = false;
+async function ensureDbInitialized(req, res, next) {
+  if (!dbInitialized) {
+    try {
+      await initDb();
+      dbInitialized = true;
+      logger.info("Database initialized on first request");
+    } catch (e) {
+      logger.error(`Database initialization failed: ${e.message}`);
+      return res.status(500).json({ error: "Database initialization failed" });
+    }
+  }
+  next();
+}
 
 /**
  * Get current authenticated user from token
@@ -77,7 +93,7 @@ async function requireAuth(req, res, next) {
  * Returns:
  *   Access token and user information
  */
-router.post("/signup", async (req, res) => {
+router.post("/signup", ensureDbInitialized, async (req, res) => {
   try {
     const { username, email, password, full_name } = req.body;
     
@@ -136,7 +152,7 @@ router.post("/signup", async (req, res) => {
  * Returns:
  *   Access token and user information
  */
-router.post("/login", async (req, res) => {
+router.post("/login", ensureDbInitialized, async (req, res) => {
   try {
     const { username, password } = req.body;
     
@@ -187,7 +203,7 @@ router.post("/login", async (req, res) => {
  * Returns:
  *   Current user information
  */
-router.get("/me", requireAuth, async (req, res) => {
+router.get("/me", ensureDbInitialized, requireAuth, async (req, res) => {
   const user = req.user;
   return res.json({
     id: user.id,
