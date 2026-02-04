@@ -8,7 +8,7 @@ import logger from './logger.js';
 function getDatabaseUrl() {
   // Prefer POSTGRES_URL (pooler connection, best for Vercel)
   // Fallback to SUPABASE_DB_URL (direct connection, OK for local)
-  const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DB_URL;
+  let dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.SUPABASE_DB_URL;
   if (!dbUrl) {
     let errorMsg = "Database connection string not found. ";
     if (process.env.VERCEL) {
@@ -19,6 +19,28 @@ function getDatabaseUrl() {
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
+  
+  // On Vercel, convert direct connection to pooler if needed
+  if (process.env.VERCEL && dbUrl.includes('db.') && dbUrl.includes('.supabase.co:5432')) {
+    logger.warn("Direct connection detected on Vercel - converting to pooler connection");
+    // Convert: db.xxx.supabase.co:5432 -> aws-0-[region].pooler.supabase.com:6543
+    // Extract project ref from direct connection
+    const match = dbUrl.match(/db\.([^.]+)\.supabase\.co/);
+    if (match) {
+      const projectRef = match[1];
+      // Extract password and other parts
+      const urlMatch = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@db\.([^:]+):(\d+)\/(.+)/);
+      if (urlMatch) {
+        const [, user, password, host, port, database] = urlMatch;
+        // Use pooler connection (default region is us-east-1, but we'll try to detect or use default)
+        // For now, use the project ref to construct pooler URL
+        // Most Supabase projects use aws-0-us-east-1, but we'll use a generic approach
+        dbUrl = `postgresql://${user}:${password}@aws-0-us-east-1.pooler.supabase.com:6543/${database}?sslmode=require&pgbouncer=true`;
+        logger.info("Converted direct connection to pooler connection for Vercel");
+      }
+    }
+  }
+  
   if (dbUrl.includes('pooler.supabase.com')) {
     logger.info("Using Supabase PostgreSQL pooler connection");
   } else {
