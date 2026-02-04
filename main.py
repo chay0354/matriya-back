@@ -45,14 +45,16 @@ app.add_middleware(
 )
 
 # Initialize database (non-blocking on Vercel)
-try:
-    init_db()
-except Exception as e:
-    logger.error(f"Database initialization failed: {e}")
-    if os.getenv("VERCEL"):
-        logger.warning("Continuing without database initialization on Vercel - will retry on first use")
-    else:
+# On Vercel, skip initialization at startup to avoid blocking
+if not os.getenv("VERCEL"):
+    try:
+        init_db()
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
         raise
+else:
+    # On Vercel, database will be initialized on first use (lazy initialization)
+    logger.info("Skipping database initialization on Vercel - will initialize on first use")
 
 # Include authentication router
 app.include_router(auth_router)

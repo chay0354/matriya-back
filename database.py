@@ -37,28 +37,27 @@ class User(Base):
 def get_database_url():
     """Get database URL based on DB_MODE"""
     if settings.DB_MODE.lower() == "supabase":
-        # Prefer pooler connection for serverless (Vercel)
-        # Check for POSTGRES_URL (pooler) first, then SUPABASE_DB_URL
+        # ALWAYS prefer pooler connection for serverless (Vercel)
+        # Check for POSTGRES_URL (pooler) first - this is the pooler connection
         pooler_url = os.getenv("POSTGRES_URL") or os.getenv("POSTGRES_PRISMA_URL")
-        if pooler_url and os.getenv("VERCEL"):
-            # Use pooler connection on Vercel (supports IPv4, better for serverless)
-            logger.info("Using Supabase pooler connection (serverless-optimized)")
+        if pooler_url:
+            # Use pooler connection (supports IPv4, better for serverless)
+            if os.getenv("VERCEL"):
+                logger.info("Using Supabase pooler connection (serverless-optimized)")
+            else:
+                logger.info("Using Supabase pooler connection")
             return pooler_url
         
+        # Fallback to SUPABASE_DB_URL if POSTGRES_URL not set
         if not settings.SUPABASE_DB_URL:
-            error_msg = "SUPABASE_DB_URL or POSTGRES_URL must be set when DB_MODE=supabase. Please set it in Vercel environment variables."
+            error_msg = "POSTGRES_URL or SUPABASE_DB_URL must be set when DB_MODE=supabase. For Vercel, use POSTGRES_URL (pooler connection)."
             logger.error(error_msg)
             raise ValueError(error_msg)
         
-        # Use SUPABASE_DB_URL, but prefer pooler if available
+        # Warn if using direct connection on Vercel
         db_url = settings.SUPABASE_DB_URL
-        
-        # If using direct connection, try to use pooler instead on Vercel
         if os.getenv("VERCEL") and "pooler.supabase.com" not in db_url:
-            pooler_url = os.getenv("POSTGRES_URL")
-            if pooler_url:
-                logger.info("Switching to pooler connection for Vercel (IPv4 compatible)")
-                return pooler_url
+            logger.warning("Using direct connection on Vercel - this may fail with IPv6. Set POSTGRES_URL for pooler connection.")
         
         return db_url
     else:
