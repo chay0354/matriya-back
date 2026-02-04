@@ -18,10 +18,28 @@ original_cwd = os.getcwd()
 os.chdir(str(back_dir))
 
 # Import app - this must happen at module level for Vercel
-from main import app
+# Wrap in try/except to provide better error messages
+try:
+    from main import app
+    
+    # Vercel expects the app to be exported as 'handler'
+    # FastAPI is ASGI-compatible, so it works directly
+    handler = app
+    
+    # Verify handler is callable (ASGI app)
+    if not callable(handler):
+        raise TypeError("Handler must be callable (ASGI app)")
+    
+except ImportError as e:
+    import logging
+    logging.basicConfig(level=logging.ERROR)
+    logging.error(f"Failed to import app: {e}", exc_info=True)
+    raise
+except Exception as e:
+    import logging
+    logging.basicConfig(level=logging.ERROR)
+    logging.error(f"Error setting up handler: {e}", exc_info=True)
+    raise
 
-# Vercel expects the app to be exported as 'handler'
-# FastAPI is ASGI-compatible, so it works directly
-# Export both 'handler' and 'app' for compatibility
-handler = app
+# Export for Vercel
 __all__ = ['handler', 'app']
