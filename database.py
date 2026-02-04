@@ -2,7 +2,10 @@
 Database setup for user management - supports both local SQLite and Supabase PostgreSQL
 """
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base as _create_model_class
+# Import declarative_base dynamically to avoid Vercel detection
+import importlib
+_sqlalchemy_declarative = importlib.import_module('sqlalchemy.ext.declarative')
+_create_model_class = _sqlalchemy_declarative.declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 from pathlib import Path
@@ -12,10 +15,23 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# Base class for models - renamed to avoid Vercel handler detection conflicts
-# Vercel's handler code looks for 'Base' and tries issubclass() which fails
-# Using DBModel instead of ModelBase to avoid any "base" substring detection
+# Base class for models - using function to create to avoid Vercel handler detection
+# Vercel's handler code scans for variables with 'base' in name and tries issubclass()
+# By using a function call, we avoid exposing 'declarative_base' or 'base' in module namespace
 DBModel = _create_model_class()
+
+# Explicitly control what gets exported to avoid Vercel scanning internal variables
+__all__ = [
+    'User',
+    'FilePermission', 
+    'DBModel',
+    'get_database_url',
+    'init_db',
+    'get_db',
+    'SessionLocal',
+    'engine',
+    'DATABASE_URL'
+]
 
 
 class User(DBModel):

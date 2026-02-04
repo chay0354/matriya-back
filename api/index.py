@@ -10,18 +10,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 os.chdir(str(Path(__file__).parent.parent))
 
-# Import app in a way that avoids Vercel handler detection issues
-# by ensuring the import happens cleanly without exposing problematic variables
+# Import app directly but ensure clean namespace
+# Vercel expects 'handler' to be the ASGI app
 try:
-    from main import app as fastapi_app
+    # Import in a way that minimizes namespace pollution
+    import main
+    handler = main.app
+    # Clean up the import reference to avoid Vercel scanning
+    del main
 except Exception as e:
     # If import fails, create a minimal error app
     from fastapi import FastAPI
-    fastapi_app = FastAPI()
-    @fastapi_app.get("/")
+    handler = FastAPI()
+    @handler.get("/")
     async def error():
         return {"error": f"Import error: {str(e)}"}
-
-# Vercel expects 'handler' - export FastAPI app directly
-# Use a different variable name to avoid any potential conflicts
-handler = fastapi_app
