@@ -1,115 +1,19 @@
-# EXCLUDE EVERYTHING - Only include what's absolutely necessary
-# This file tells Vercel what NOT to upload
-
-# ALL data directories
-chroma_db/
+# Files to ignore when deploying to Vercel
+node_modules/
+__pycache__/
+*.py
+*.pyc
 uploads/
-data/
-models/
-checkpoints/
-weights/
-embeddings/
+chroma_db/
 *.db
 *.sqlite
 *.sqlite3
-users.db
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-*.egg
-*.egg-info/
-.pytest_cache/
-.mypy_cache/
-.coverage
-htmlcov/
-
-# Virtual environments
-venv/
-env/
-ENV/
-.venv/
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
-
-# Environment files
 .env
 .env.local
-.env.*.local
-
-# Model files
-*.bin
-*.safetensors
-*.pt
-*.pth
-*.h5
-*.ckpt
-*.onnx
-*.pb
-*.tflite
-*.pkl
-*.joblib
-*.model
-*.weights
-
-# Test files
-test_*.py
-*_test.py
-tests/
-__tests__/
-
-# Documentation
-*.md
-!README.md
-
-# Scripts
-setup.py
-setup.cfg
-*.bat
-*.sh
-*.ps1
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Logs
 *.log
-logs/
-
-# Temporary
-tmp/
-temp/
-*.tmp
-
-# Git
+.DS_Store
 .git/
-
-# Node modules
-node_modules/
-
-# Archives
-*.zip
-*.tar
-*.tar.gz
-*.rar
-*.7z
-
-# Large binary files
-*.exe
-*.dll
-*.dylib
+.gitignore
+README*.md
+*.md
+!README_NODEJS.md

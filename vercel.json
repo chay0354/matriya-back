@@ -2,17 +2,27 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python",
+      "src": "api/index.js",
+      "use": "@vercel/node",
       "config": {
-        "maxLambdaSize": "250mb"
+        "maxLambdaSize": "250mb",
+        "includeFiles": [
+          "**/*.js",
+          "package.json"
+        ]
       }
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "api/index.js"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60,
+      "memory": 3008
+    }
+  }
 }

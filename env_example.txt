@@ -1,40 +1,42 @@
 # RAG System Configuration
+# For Vercel: Set these in Vercel Dashboard → Settings → Environment Variables
 
-# Database Mode: "local" or "supabase"
-# - local: Uses ChromaDB (vector) + SQLite (users)
-# - supabase: Uses Supabase PostgreSQL with pgvector
-DB_MODE=local
+# Database (Supabase PostgreSQL) - REQUIRED for Vercel
+# Use pooler connection for Vercel (better for serverless)
+POSTGRES_URL=postgresql://postgres:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true
 
-# Vector Database (local mode only)
-CHROMA_DB_PATH=./chroma_db
-COLLECTION_NAME=documents
+# OR use direct connection (not recommended for Vercel)
+# SUPABASE_DB_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres?sslmode=require
+
+# Supabase (optional, for Supabase client features)
+SUPABASE_URL=https://[PROJECT].supabase.co
+SUPABASE_KEY=your-supabase-anon-key
 
 # Embedding Model
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 
-# Document Processing
-UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=52428800
-
-# Chunking Settings
-CHUNK_SIZE=500
-CHUNK_OVERLAP=100
-
-# API Settings
-API_HOST=0.0.0.0
-API_PORT=8000
-
-# Supabase Settings (required when DB_MODE=supabase)
-# Get these from your Supabase project settings
-# SUPABASE_URL=https://your-project.supabase.co
-# SUPABASE_KEY=your-supabase-anon-key
-# SUPABASE_DB_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT].supabase.co:5432/postgres
-
-# LLM API Configuration
+# LLM Provider - Together AI (recommended)
 LLM_PROVIDER=together
 TOGETHER_API_KEY=your-together-api-key
 TOGETHER_MODEL=mistralai/Mistral-7B-Instruct-v0.2
 
-# Hugging Face (backup)
+# OR Hugging Face (backup)
 HF_API_TOKEN=your-hf-token
 HF_MODEL=microsoft/phi-2
+
+# Optional: OpenAI for better embeddings (recommended)
+OPENAI_API_KEY=your-openai-api-key
+
+# JWT Secret (generate a random string)
+JWT_SECRET=your-random-secret-key-here
+
+# Collection Name
+COLLECTION_NAME=documents
+
+# File Upload Settings (for Vercel, UPLOAD_DIR should be /tmp)
+MAX_FILE_SIZE=52428800
+UPLOAD_DIR=/tmp
+
+# Chunking Settings
+CHUNK_SIZE=500
+CHUNK_OVERLAP=100
