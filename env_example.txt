@@ -1,12 +1,9 @@
 # RAG System Configuration
 # For Vercel: Set these in Vercel Dashboard → Settings → Environment Variables
 
-# Database (Supabase PostgreSQL) - REQUIRED for Vercel
-# Use pooler connection for Vercel (better for serverless)
+# Database (Supabase PostgreSQL) - REQUIRED
+# Use pooler connection (required for Vercel, recommended for all)
 POSTGRES_URL=postgresql://postgres:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true
-
-# OR use direct connection (not recommended for Vercel)
-# SUPABASE_DB_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres?sslmode=require
 
 # Supabase (optional, for Supabase client features)
 SUPABASE_URL=https://[PROJECT].supabase.co

@@ -2,39 +2,18 @@
  * Database setup for user management - Supabase PostgreSQL only
  */
 import { Sequelize, DataTypes } from 'sequelize';
-import settings from './config.js';
 import logger from './logger.js';
 
-// Get database URL - Supabase only
+// Get database URL - Supabase only (use POSTGRES_URL)
 function getDatabaseUrl() {
-  // ALWAYS prefer pooler connection for serverless (Vercel)
-  // Check for POSTGRES_URL (pooler) first - this is the pooler connection
-  const poolerUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
-  if (poolerUrl) {
-    // Use pooler connection (supports IPv4, better for serverless)
-    if (process.env.VERCEL) {
-      logger.info("Using Supabase pooler connection (serverless-optimized)");
-    } else {
-      logger.info("Using Supabase pooler connection");
-    }
-    return poolerUrl;
-  }
-  
-  // On Vercel, REQUIRE pooler connection - direct connections will fail
-  if (process.env.VERCEL) {
-    const errorMsg = "POSTGRES_URL (pooler connection) is REQUIRED on Vercel. Direct connections (SUPABASE_DB_URL) will fail. Set POSTGRES_URL in Vercel environment variables with format: postgresql://postgres:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true";
+  const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+  if (!dbUrl) {
+    const errorMsg = "POSTGRES_URL environment variable is required. Set it to your Supabase pooler connection string.";
     logger.error(errorMsg);
     throw new Error(errorMsg);
   }
-  
-  // Fallback to SUPABASE_DB_URL if POSTGRES_URL not set (only for non-Vercel)
-  if (!settings.SUPABASE_DB_URL) {
-    const errorMsg = "POSTGRES_URL or SUPABASE_DB_URL must be set.";
-    logger.error(errorMsg);
-    throw new Error(errorMsg);
-  }
-  
-  return settings.SUPABASE_DB_URL;
+  logger.info("Using Supabase PostgreSQL connection");
+  return dbUrl;
 }
 
 // Create Sequelize instance
@@ -44,28 +23,16 @@ let DATABASE_URL;
 try {
   DATABASE_URL = getDatabaseUrl();
   
-  // Clean connection string - remove all SSL-related parameters (we'll handle SSL in dialectOptions)
-  let dbUrl = DATABASE_URL;
-  // Remove sslmode and ssl parameters from URL if they exist
-  dbUrl = dbUrl.replace(/[?&](sslmode|ssl)=[^&]*/gi, '');
-  // Clean up any double separators
-  dbUrl = dbUrl.replace(/\?&/, '?').replace(/&&/, '&');
-  // Remove trailing ? or & if present
-  dbUrl = dbUrl.replace(/[?&]$/, '');
+  // Clean connection string - remove SSL parameters (handled in dialectOptions)
+  let dbUrl = DATABASE_URL.replace(/[?&](sslmode|ssl)=[^&]*/gi, '').replace(/\?&/, '?').replace(/&&/, '&').replace(/[?&]$/, '');
   
-  // For serverless (Vercel), use smaller pool and faster timeouts
-  const poolConfig = process.env.VERCEL ? {
-    max: 1,
+  // Pool configuration (optimized for serverless)
+  const poolConfig = {
+    max: process.env.VERCEL ? 1 : 5,
     min: 0,
     idle: 10000,
-    acquire: 5000,
-    evict: 1000
-  } : {
-    max: 5,
-    min: 0,
-    idle: 10000,
-    acquire: 10000,
-    evict: 60000
+    acquire: process.env.VERCEL ? 5000 : 10000,
+    evict: process.env.VERCEL ? 1000 : 60000
   };
   
   sequelize = new Sequelize(dbUrl, {
@@ -74,27 +41,18 @@ try {
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false  // Allow self-signed certificates for Supabase
+        rejectUnauthorized: false
       },
       connectTimeout: process.env.VERCEL ? 5000 : 10000
     },
     pool: poolConfig
   });
   
-  if (process.env.VERCEL) {
-    logger.info("Using Supabase PostgreSQL database (serverless-optimized)");
-  } else {
-    logger.info("Using Supabase PostgreSQL database");
-  }
+  logger.info("Supabase database connection configured");
 } catch (e) {
-  logger.error(`Failed to get database URL: ${e.message}`);
-  // On Vercel, throw error immediately - don't set sequelize to null
-  // This ensures we get a clear error message instead of null User model
+  logger.error(`Database setup failed: ${e.message}`);
   DATABASE_URL = null;
   sequelize = null;
-  // Don't throw here - let it fail when User model is accessed
-  // This way we get a better error message from initDb()
-  logger.error("Database connection not available. Set POSTGRES_URL environment variable.");
 }
 
 // Define User model - will be null if sequelize is null (connection failed)

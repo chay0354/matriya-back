@@ -33,10 +33,9 @@ class Settings {
     this.API_HOST = process.env.API_HOST || "0.0.0.0";
     this.API_PORT = parseInt(process.env.API_PORT) || 8000;
     
-    // Supabase Settings (required)
+    // Supabase Settings (optional - only for Supabase client features)
     this.SUPABASE_URL = process.env.SUPABASE_URL || null;
     this.SUPABASE_KEY = process.env.SUPABASE_KEY || null;
-    this.SUPABASE_DB_URL = process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || null;
     
     // LLM API Configuration (Together AI or Hugging Face)
     this.LLM_PROVIDER = process.env.LLM_PROVIDER || "together";
