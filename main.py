@@ -38,61 +38,17 @@ app.include_router(auth_router)
 # Include admin router
 app.include_router(admin_router)
 
-# CORS middleware - Allow frontend access
-# Get allowed origins from environment or use defaults
-allowed_origins = []
+# CORS middleware - Allow all origins (no restrictions)
+logger.info("CORS configured to allow all origins")
 
-# Add origins from CORS_ORIGINS environment variable
-cors_origins_env = os.getenv("CORS_ORIGINS", "")
-if cors_origins_env:
-    allowed_origins.extend([origin.strip() for origin in cors_origins_env.split(",") if origin.strip()])
-
-# Add default localhost origins
-allowed_origins.extend([
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "file://",  # Allow file:// protocol for direct HTML opening
-])
-
-# Add Vercel frontend URL (production) - always allow
-allowed_origins.append("https://matriya-front.vercel.app")
-
-# Add Vercel deployment URL if available (backend's own URL - for reference)
-vercel_url = os.getenv("VERCEL_URL")
-if vercel_url:
-    allowed_origins.append(f"https://{vercel_url}")
-
-# In development, allow all origins
-if os.getenv("ENVIRONMENT") != "production":
-    allowed_origins.append("*")
-
-# Log allowed origins for debugging
-logger.info(f"CORS allowed origins: {allowed_origins}")
-
-# Configure CORS middleware
-# Note: In production, we need to explicitly list origins (can't use "*" with credentials)
-if "*" in allowed_origins:
-    # Development mode - allow all
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,  # Can't use credentials with wildcard
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        allow_headers=["*"],
-        expose_headers=["*"],
-    )
-else:
-    # Production mode - explicit origins
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-        allow_headers=["*"],
-        expose_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],
+)
 
 # Initialize RAG service (lazy initialization to avoid blocking startup)
 rag_service = None
