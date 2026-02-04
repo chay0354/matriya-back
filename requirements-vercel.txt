@@ -1,25 +1,39 @@
-# Vercel-compatible requirements
-# Note: Some packages may need adjustment for serverless environment
+# Minimal requirements for Vercel deployment
+# Note: sentence-transformers and transformers are NOT included
+# Embeddings will be done via Supabase or API calls
 
+# API Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
+
+# Utilities
 python-dotenv==1.0.0
-pydantic==2.5.0
+pydantic>=2.6.3,<3.0.0
 pydantic-settings==2.1.0
+
+# File handling
 aiofiles==23.2.1
-sentence-transformers>=2.7.0
-chromadb>=0.4.15
-langchain==0.0.350
-PyPDF2==3.0.1
-python-docx==1.1.0
-openpyxl==3.1.2
-transformers==4.35.2
+
+# HTTP requests for LLM API
 requests==2.31.0
+huggingface_hub>=0.20.0
+
+# Database and Authentication
 sqlalchemy==1.4.46
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 bcrypt==4.0.1
+
+# Supabase/PostgreSQL support
 psycopg2-binary==2.9.9
 pgvector==0.2.3
-huggingface-hub>=0.19.0
+
+# Document Processing (lightweight)
+PyPDF2==3.0.1
+python-docx==1.1.0
+openpyxl==3.1.2
+
+# NOTE: ChromaDB and sentence-transformers are NOT included
+# Embeddings should be done via Supabase or external API
+# If you need local embeddings, use a separate service

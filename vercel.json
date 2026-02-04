@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "250mb"
+      }
     }
   ],
   "routes": [
@@ -22,6 +25,7 @@
     "*.pyc",
     ".git/**",
     "*.md",
-    "!README.md"
+    "!README.md",
+    "requirements.txt"
   ]
 }
