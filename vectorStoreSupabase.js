@@ -31,17 +31,31 @@ class SupabaseVectorStore {
     if (process.env.VERCEL) {
       logger.info("Using embedding API (on Vercel)");
       this.embeddingDim = 384;
+      this._localModelReady = Promise.resolve(false);
     } else {
-      // Try to load local model using @xenova/transformers (like Python's sentence-transformers)
-      this._loadLocalModel().catch(e => {
-        logger.warn(`Failed to load local embedding model: ${e.message}, will use API`);
-      });
+      // Load local model; ingestion will wait for this so we prefer local over HF API (which often returns 410 for free tier)
+      this._localModelReady = this._loadLocalModel()
+        .then(() => true)
+        .catch(e => {
+          logger.warn(`Failed to load local embedding model: ${e.message}, will use API`);
+          return false;
+        });
     }
+
+    // Normalize DB URL for SSL: Supabase/pg often use certs that Node treats as self-signed; force no-verify so connection succeeds
+    const normalizedDbUrl = (() => {
+      if (typeof dbUrl !== 'string') return dbUrl;
+      if (dbUrl.includes('sslmode=')) {
+        return dbUrl.replace(/sslmode=[^&]+/, 'sslmode=no-verify');
+      }
+      const sep = dbUrl.includes('?') ? '&' : '?';
+      return `${dbUrl}${sep}sslmode=no-verify`;
+    })();
 
     // Create connection pool with timeout
     try {
       this.pool = new Pool({
-        connectionString: dbUrl,
+        connectionString: normalizedDbUrl,
         max: process.env.VERCEL ? 1 : 10,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: process.env.VERCEL ? 5000 : 10000,
@@ -154,8 +168,10 @@ class SupabaseVectorStore {
       } catch (e) {
         if (e.response) {
           logger.error(`Error generating embedding via API: ${e.response.status} - ${e.response.statusText}`);
+          if (e.response.status === 410) {
+            logger.warn("Hugging Face free serverless API no longer hosts this model (410 Gone). Use local embeddings, OPENAI_API_KEY, or HF Inference Endpoints.");
+          }
           if (e.response.status === 503) {
-            // Model is loading, wait a bit and use fallback for now
             logger.warn("Model is loading, using fallback embedding");
           }
         } else {
@@ -294,8 +310,14 @@ class SupabaseVectorStore {
       return [];
     }
 
-    // Generate embeddings
+    // Generate embeddings (prefer local model; wait briefly for it to finish loading on first use)
     logger.info(`Generating embeddings for ${texts.length} chunks...`);
+    if (!this.embeddingModel && this._localModelReady) {
+      await Promise.race([
+        this._localModelReady,
+        new Promise(r => setTimeout(r, 25000))
+      ]);
+    }
     let embeddings;
     if (this.embeddingModel) {
       // Use local model if available (like Python's sentence-transformers)
