@@ -37,20 +37,27 @@ function isStageAllowed(completedStages, stage) {
 }
 
 /**
- * Get or create session. Returns { session, completed_stages }.
+ * Get existing session by id. Returns { session, completed_stages } or null if not found.
+ * Does NOT create. Use for search: no valid session → no handling.
+ */
+export async function getSession(sessionId) {
+  if (!ResearchSession || !sessionId) return null;
+  const session = await ResearchSession.findByPk(sessionId);
+  if (!session) return null;
+  return { session, completed_stages: session.completed_stages || [] };
+}
+
+/**
+ * Create a new research session (only via POST /research/session).
+ * Returns { session, completed_stages }.
  */
 export async function getOrCreateSession(sessionId, userId = null) {
   if (!ResearchSession) {
     throw new Error('ResearchSession model not available');
   }
   if (sessionId) {
-    const session = await ResearchSession.findByPk(sessionId);
-    if (session) {
-      return {
-        session,
-        completed_stages: session.completed_stages || []
-      };
-    }
+    const existing = await getSession(sessionId);
+    if (existing) return existing;
   }
   const session = await ResearchSession.create({
     user_id: userId,
@@ -60,14 +67,23 @@ export async function getOrCreateSession(sessionId, userId = null) {
 }
 
 /**
- * Validate request: stage required, valid transition. Returns { ok, error, session, completed_stages, responseType }.
+ * FSCTM Gate: validate request. Requires valid session_id + stage.
+ * Returns { ok, error, session, completed_stages, responseType }.
  * responseType: 'hard_stop' | 'info_only' | 'full_answer'
+ * Without valid session → no handling.
  */
 export async function validateAndAdvance(sessionId, stage, userId = null) {
   if (!stage || !VALID_STAGES.has(stage)) {
     return { ok: false, error: 'stage is required and must be one of: K, C, B, N, L' };
   }
-  const { session, completed_stages } = await getOrCreateSession(sessionId, userId);
+  if (!sessionId) {
+    return { ok: false, error: 'session_id is required. Create a session via POST /research/session first.' };
+  }
+  const data = await getSession(sessionId);
+  if (!data) {
+    return { ok: false, error: 'Invalid or expired session. Use a valid session_id from POST /research/session.' };
+  }
+  const { session, completed_stages } = data;
   if (!isStageAllowed(completed_stages, stage)) {
     const next = getNextAllowedStage(completed_stages);
     return {

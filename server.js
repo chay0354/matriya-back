@@ -297,12 +297,12 @@ app.post("/ingest/directory", async (req, res) => {
 
 /**
  * Search for relevant documents and optionally generate an answer
- * Stage 1: stage (K|C|B|N|L) required when generate_answer=true. session_id optional (created if missing).
+ * Stage 1: session_id + stage required when generate_answer=true. No valid session → no handling.
  *
  * Query params:
  *   query: Search query (required)
+ *   session_id: Research session UUID (required when generate_answer=true; create via POST /research/session)
  *   stage: Research stage K|C|B|N|L (required when generate_answer=true)
- *   session_id: Optional research session UUID (created if omitted)
  *   n_results: Number of results to return (default: 5)
  *   filename: Optional filename filter
  *   generate_answer: Whether to generate AI answer from results (default: true)
@@ -333,7 +333,13 @@ app.get("/search", async (req, res) => {
 
   try {
     if (generateAnswer) {
-      // Stage 1: stage required; FSM gate
+      // Stage 1: session_id + stage required. Without valid session → no handling.
+      if (!sessionId || String(sessionId).trim() === '') {
+        return res.status(400).json({
+          error: "session_id is required for research search. Create a session via POST /research/session first.",
+          research_session_required: true
+        });
+      }
       if (!stage || !['K', 'C', 'B', 'N', 'L'].includes(stage)) {
         return res.status(400).json({
           error: "stage is required and must be one of: K, C, B, N, L",
