@@ -9,8 +9,8 @@ import { dirname, join } from 'path';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import settings from './config.js';
 import RAGService from './ragService.js';
-import { initDb } from './database.js';
-import { authRouter } from './authEndpoints.js';
+import { initDb, SearchHistory } from './database.js';
+import { authRouter, getCurrentUser } from './authEndpoints.js';
 import { adminRouter } from './adminEndpoints.js';
 import { StateMachine, Kernel } from './stateMachine.js';
 import logger from './logger.js';
@@ -345,7 +345,20 @@ app.get("/search", async (req, res) => {
         });
       }
       
-      // If allowed (with or without warnings)
+      // If allowed (with or without warnings) - save to search history
+      const user = await getCurrentUser(req);
+      if (SearchHistory) {
+        try {
+          await SearchHistory.create({
+            user_id: user?.id ?? null,
+            username: user?.username ?? 'אורח',
+            question: query,
+            answer: kernelResult.answer || null
+          });
+        } catch (e) {
+          logger.warn(`Failed to save search history: ${e.message}`);
+        }
+      }
       return res.json({
         query: query,
         results_count: kernelResult.agent_results.doc_agent.results_count || 0,

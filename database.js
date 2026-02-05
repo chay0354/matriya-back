@@ -141,6 +141,38 @@ const FilePermission = sequelize ? sequelize.define('FilePermission', {
   timestamps: false
 }) : null;
 
+// Define SearchHistory model - stores each user's question and AI answer
+const SearchHistory = sequelize ? sequelize.define('SearchHistory', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  question: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  answer: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  }
+}, {
+  tableName: 'search_history',
+  timestamps: false
+}) : null;
+
 // Initialize database
 async function initDb() {
   if (!sequelize) {
@@ -174,6 +206,7 @@ function getDb() {
 export {
   User,
   FilePermission,
+  SearchHistory,
   sequelize,
   initDb,
   getDb,

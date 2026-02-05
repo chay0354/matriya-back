@@ -61,6 +61,18 @@ CREATE TABLE IF NOT EXISTS file_permissions (
 CREATE INDEX IF NOT EXISTS file_permissions_user_id_idx ON file_permissions(user_id);
 CREATE INDEX IF NOT EXISTS file_permissions_filename_idx ON file_permissions(filename);
 
+-- Step 10: Create search_history table (questions and answers from users for admin view)
+CREATE TABLE IF NOT EXISTS search_history (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER,
+    username VARCHAR,
+    question TEXT NOT NULL,
+    answer TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS search_history_created_at_idx ON search_history(created_at DESC);
+CREATE INDEX IF NOT EXISTS search_history_user_id_idx ON search_history(user_id);
+
 -- ============================================================================
 -- Verification Queries (optional - run to check everything is set up)
 -- ============================================================================
@@ -70,7 +82,7 @@ CREATE INDEX IF NOT EXISTS file_permissions_filename_idx ON file_permissions(fil
 
 -- Check if tables exist:
 -- SELECT table_name FROM information_schema.tables 
--- WHERE table_schema = 'public' AND table_name IN ('users', 'documents', 'file_permissions');
+-- WHERE table_schema = 'public' AND table_name IN ('users', 'documents', 'file_permissions', 'search_history');
 
 -- Check if indexes exist:
 -- SELECT indexname FROM pg_indexes 

@@ -2,7 +2,7 @@
  * Admin endpoints for file management and user permissions
  */
 import express from 'express';
-import { User, FilePermission } from './database.js';
+import { User, FilePermission, SearchHistory } from './database.js';
 import { getCurrentUser } from './authEndpoints.js';
 import RAGService from './ragService.js';
 import logger from './logger.js';
@@ -181,6 +181,36 @@ router.post("/users/:user_id/permissions", verifyAdmin, async (req, res) => {
   } catch (e) {
     logger.error(`Error setting user permissions: ${e.message}`);
     return res.status(500).json({ error: `Error setting user permissions: ${e.message}` });
+  }
+});
+
+/**
+ * Get all search history - questions and answers from all users (admin only)
+ */
+router.get("/search-history", verifyAdmin, async (req, res) => {
+  try {
+    if (!SearchHistory) {
+      return res.json({ history: [], count: 0 });
+    }
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const history = await SearchHistory.findAll({
+      order: [['created_at', 'DESC']],
+      limit
+    });
+    return res.json({
+      history: history.map(h => ({
+        id: h.id,
+        user_id: h.user_id,
+        username: h.username || 'אורח',
+        question: h.question,
+        answer: h.answer,
+        created_at: h.created_at ? h.created_at.toISOString() : null
+      })),
+      count: history.length
+    });
+  } catch (e) {
+    logger.error(`Error getting search history: ${e.message}`);
+    return res.status(500).json({ error: `Error getting search history: ${e.message}` });
   }
 });
 
