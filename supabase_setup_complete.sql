@@ -73,6 +73,26 @@ CREATE TABLE IF NOT EXISTS search_history (
 CREATE INDEX IF NOT EXISTS search_history_created_at_idx ON search_history(created_at DESC);
 CREATE INDEX IF NOT EXISTS search_history_user_id_idx ON search_history(user_id);
 
+-- Step 11: Research sessions and audit log (Stage 1 – FSM K→C→B→N→L)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE TABLE IF NOT EXISTS research_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id INTEGER,
+    completed_stages TEXT[] DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS research_audit_log (
+    id SERIAL PRIMARY KEY,
+    session_id UUID NOT NULL REFERENCES research_sessions(id) ON DELETE CASCADE,
+    stage VARCHAR(10) NOT NULL,
+    response_type VARCHAR(50),
+    request_query TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS research_audit_log_session_id_idx ON research_audit_log(session_id);
+CREATE INDEX IF NOT EXISTS research_audit_log_created_at_idx ON research_audit_log(created_at);
+
 -- ============================================================================
 -- Verification Queries (optional - run to check everything is set up)
 -- ============================================================================
@@ -82,7 +102,7 @@ CREATE INDEX IF NOT EXISTS search_history_user_id_idx ON search_history(user_id)
 
 -- Check if tables exist:
 -- SELECT table_name FROM information_schema.tables 
--- WHERE table_schema = 'public' AND table_name IN ('users', 'documents', 'file_permissions', 'search_history');
+-- WHERE table_schema = 'public' AND table_name IN ('users', 'documents', 'file_permissions', 'search_history', 'research_sessions', 'research_audit_log');
 
 -- Check if indexes exist:
 -- SELECT indexname FROM pg_indexes 

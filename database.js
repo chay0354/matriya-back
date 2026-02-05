@@ -173,6 +173,68 @@ const SearchHistory = sequelize ? sequelize.define('SearchHistory', {
   timestamps: false
 }) : null;
 
+// Research Session (Stage 1) - FSM: K→C→B→N→L
+const STAGES_ORDER = ['K', 'C', 'B', 'N', 'L'];
+
+const ResearchSession = sequelize ? sequelize.define('ResearchSession', {
+  id: {
+    type: DataTypes.UUID,
+    primaryKey: true,
+    defaultValue: DataTypes.UUIDV4
+  },
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  completed_stages: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+    allowNull: false
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  updated_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  }
+}, {
+  tableName: 'research_sessions',
+  timestamps: false
+}) : null;
+
+const ResearchAuditLog = sequelize ? sequelize.define('ResearchAuditLog', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  session_id: {
+    type: DataTypes.UUID,
+    allowNull: false
+  },
+  stage: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  response_type: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  request_query: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  }
+}, {
+  tableName: 'research_audit_log',
+  timestamps: false
+}) : null;
+
 // Initialize database
 async function initDb() {
   if (!sequelize) {
@@ -207,6 +269,9 @@ export {
   User,
   FilePermission,
   SearchHistory,
+  ResearchSession,
+  ResearchAuditLog,
+  STAGES_ORDER,
   sequelize,
   initDb,
   getDb,
