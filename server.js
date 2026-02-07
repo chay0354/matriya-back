@@ -388,6 +388,21 @@ app.get("/search", async (req, res) => {
       );
 
       if (kernelResult.decision === 'block' || kernelResult.decision === 'stop') {
+        const noAnswerFromRag = (kernelResult.reason || '').includes('לא נמצאה תשובה') || (kernelResult.reason || '').includes('No answer');
+        if (noAnswerFromRag) {
+          await logAudit(responseSessionId, stage, 'no_results', query);
+          return res.json({
+            query,
+            results_count: 0,
+            results: kernelResult.search_results || [],
+            answer: 'לא נמצא מידע רלוונטי במסמכים.',
+            context_sources: 0,
+            context: '',
+            session_id: responseSessionId,
+            research_stage: stage,
+            response_type: 'no_results'
+          });
+        }
         await logAudit(responseSessionId, stage, 'blocked', query);
         return res.json({
           query,

@@ -14,7 +14,7 @@ class LLMService {
     if (this.provider === "together") {
       this.apiKey = settings.TOGETHER_API_KEY;
       this.model = settings.TOGETHER_MODEL;
-      this.apiUrl = "https://api.together.xyz/inference";
+      this.apiUrl = "https://api.together.xyz/v1/chat/completions";
     } else {
       // Hugging Face
       this.apiKey = settings.HF_API_TOKEN;
@@ -45,24 +45,20 @@ class LLMService {
     }
     
     // Format prompt for instruction-tuned models
-    // Detect language from question and instruct to answer in same language
-    const prompt = `Based on the following context, answer the question clearly and concisely. IMPORTANT: Answer in the same language as the question.
-
-Context:
-${context}
-
-Question: ${question}
-
-Answer (in the same language as the question):`;
+    const systemPrompt = "Based on the given context, answer the question clearly and concisely. Answer in the same language as the question.";
+    const userContent = `Context:\n${context}\n\nQuestion: ${question}`;
     
     try {
       if (this.provider === "together") {
-        // Together AI API format
+        // Together AI Chat Completions API (supports Qwen and other chat models)
         const response = await axios.post(
           this.apiUrl,
           {
             model: this.model,
-            prompt: prompt,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userContent }
+            ],
             max_tokens: maxLength,
             temperature: 0.7,
             top_p: 0.9,
@@ -79,21 +75,14 @@ Answer (in the same language as the question):`;
         
         if (response.status === 200) {
           const result = response.data;
-          // Together AI returns: {"output": {"choices": [{"text": "..."}]}}
+          // Chat completions: choices[0].message.content
           let generatedText = "";
-          if (result.output && result.output.choices && result.output.choices.length > 0) {
-            generatedText = result.output.choices[0].text || "";
-          } else if (result.choices && result.choices.length > 0) {
-            // Alternative format
-            generatedText = result.choices[0].text || "";
-          } else {
-            // Fallback
-            generatedText = result.text || "";
+          if (result.choices && result.choices.length > 0) {
+            const msg = result.choices[0].message;
+            generatedText = (msg && msg.content) ? msg.content : (result.choices[0].text || "");
           }
           
           let answer = generatedText.trim();
-          
-          // Clean up
           if (answer.includes("Answer:")) {
             answer = answer.split("Answer:")[answer.split("Answer:").length - 1].trim();
           }
@@ -106,6 +95,8 @@ Answer (in the same language as the question):`;
           return null;
         }
       } else {
+        // Hugging Face: keep prompt format
+        const prompt = `Based on the following context, answer the question clearly and concisely. IMPORTANT: Answer in the same language as the question.\n\nContext:\n${context}\n\nQuestion: ${question}\n\nAnswer (in the same language as the question):`;
         // Hugging Face API format
         const response = await axios.post(
           this.apiUrl,
@@ -150,7 +141,7 @@ Answer (in the same language as the question):`;
           return answer || null;
         } else if (response.status === 503) {
           const errorMsg = response.data?.error || response.statusText;
-          logger.warn(`Together AI service unavailable (503): ${errorMsg}`);
+          logger.warn(`Hugging Face service unavailable (503): ${errorMsg}`);
           return "המודל AI לא זמין כרגע. אנא נסה שוב בעוד כמה שניות.";
         } else {
           logger.error(`Hugging Face API error ${response.status}: ${response.statusText}`);
