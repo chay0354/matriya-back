@@ -9,7 +9,7 @@ import { dirname, join } from 'path';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import settings from './config.js';
 import RAGService from './ragService.js';
-import { initDb, SearchHistory, ResearchSession, ResearchAuditLog } from './database.js';
+import { initDb, SearchHistory, ResearchSession, ResearchAuditLog, PolicyAuditLog } from './database.js';
 import { authRouter, getCurrentUser } from './authEndpoints.js';
 import { adminRouter } from './adminEndpoints.js';
 import { StateMachine, Kernel } from './stateMachine.js';
@@ -97,6 +97,35 @@ function getKernel() {
     logger.info("Kernel initialized");
   }
   return kernel;
+}
+
+const KG01_VIOLATION = 'KG-01_VIOLATION';
+const ENFORCEMENT_THRESHOLD = 3;
+
+/** Returns matriya_enforcement payload (soft redirect) or null. Does not block. */
+async function getEnforcement(sessionId, stage, session) {
+  if (stage === 'L' || !session) return null;
+  if (session.enforcement_overridden) return null;
+  if (!ResearchAuditLog) return null;
+  const count = await ResearchAuditLog.count({
+    where: { session_id: sessionId, response_type: KG01_VIOLATION }
+  });
+  if (count < ENFORCEMENT_THRESHOLD) return null;
+  return {
+    type: 'soft_redirect',
+    message_he: 'נמצאו 3 או יותר הפרות מדיניות (KG-01) בסשן זה. מומלץ לחזור לשלב B.',
+    message_en: 'Three or more policy violations (KG-01) in this session. Consider returning to stage B.',
+    suggestion_stage: 'B'
+  };
+}
+
+async function logPolicyEnforcement(sessionId, stage) {
+  if (!PolicyAuditLog) return;
+  try {
+    await PolicyAuditLog.create({ session_id: sessionId, stage });
+  } catch (e) {
+    logger.warn(`Policy audit log failed: ${e.message}`);
+  }
 }
 
 // Configure multer for file uploads
@@ -361,6 +390,8 @@ app.get("/search", async (req, res) => {
       }
       const responseSessionId = gate.session.id;
       const responseType = gate.responseType;
+      const enforcement = await getEnforcement(responseSessionId, stage, gate.session);
+      if (enforcement) await logPolicyEnforcement(responseSessionId, stage);
 
       // B: Hard Stop only – no smart answer
       if (stage === 'B') {
@@ -374,7 +405,8 @@ app.get("/search", async (req, res) => {
           context: '',
           session_id: responseSessionId,
           research_stage: stage,
-          response_type: responseType
+          response_type: responseType,
+          ...(enforcement && { matriya_enforcement: enforcement })
         });
       }
 
@@ -400,7 +432,8 @@ app.get("/search", async (req, res) => {
             context: '',
             session_id: responseSessionId,
             research_stage: stage,
-            response_type: 'no_results'
+            response_type: 'no_results',
+            ...(enforcement && { matriya_enforcement: enforcement })
           });
         }
         await logAudit(responseSessionId, stage, 'blocked', query);
@@ -417,7 +450,8 @@ app.get("/search", async (req, res) => {
           blocked: true,
           block_reason: kernelResult.reason || '',
           session_id: responseSessionId,
-          research_stage: stage
+          research_stage: stage,
+          ...(enforcement && { matriya_enforcement: enforcement })
         });
       }
 
@@ -455,6 +489,7 @@ app.get("/search", async (req, res) => {
         session_id: responseSessionId,
         research_stage: stage,
         response_type: responseType,
+        ...(enforcement && { matriya_enforcement: enforcement }),
         agent_results: {
           contradiction: kernelResult.agent_results.contradiction_agent,
           risk: kernelResult.agent_results.risk_agent
@@ -513,6 +548,7 @@ app.get("/research/session/:id", async (req, res) => {
     return res.json({
       session_id: session.id,
       completed_stages: session.completed_stages || [],
+      enforcement_overridden: !!session.enforcement_overridden,
       created_at: session.created_at,
       audit_log: logs.map(l => ({
         stage: l.stage,
@@ -523,6 +559,22 @@ app.get("/research/session/:id", async (req, res) => {
     });
   } catch (e) {
     logger.error(`Get research session error: ${e.message}`);
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+/** Set enforcement_overridden on session (dismiss soft-redirect warning for this session). */
+app.patch("/research/session/:id", async (req, res) => {
+  if (!ResearchSession) return res.status(503).json({ error: "Research session storage not available" });
+  const sessionId = req.params.id;
+  const overridden = req.body?.enforcement_overridden === true;
+  try {
+    const session = await ResearchSession.findByPk(sessionId);
+    if (!session) return res.status(404).json({ error: "Session not found" });
+    await session.update({ enforcement_overridden: overridden, updated_at: new Date() });
+    return res.json({ session_id: session.id, enforcement_overridden: session.enforcement_overridden });
+  } catch (e) {
+    logger.error(`Patch research session error: ${e.message}`);
     return res.status(500).json({ error: e.message });
   }
 });

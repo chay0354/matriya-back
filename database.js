@@ -198,6 +198,11 @@ const ResearchSession = sequelize ? sequelize.define('ResearchSession', {
   updated_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
+  },
+  enforcement_overridden: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false
   }
 }, {
   tableName: 'research_sessions',
@@ -232,6 +237,29 @@ const ResearchAuditLog = sequelize ? sequelize.define('ResearchAuditLog', {
   }
 }, {
   tableName: 'research_audit_log',
+  timestamps: false
+}) : null;
+
+const PolicyAuditLog = sequelize ? sequelize.define('PolicyAuditLog', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  session_id: {
+    type: DataTypes.UUID,
+    allowNull: false
+  },
+  stage: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  }
+}, {
+  tableName: 'policy_audit_log',
   timestamps: false
 }) : null;
 
@@ -271,6 +299,7 @@ export {
   SearchHistory,
   ResearchSession,
   ResearchAuditLog,
+  PolicyAuditLog,
   STAGES_ORDER,
   sequelize,
   initDb,
